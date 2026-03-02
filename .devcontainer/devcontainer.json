@@ -13,7 +13,7 @@
             "onAutoForward": "openBrowser"
         }
     },
-    "postStartCommand": "bash /workspaces/ece4203/scripts/start-vnc.sh",
+    "postStartCommand": "bash /workspaces/ece4203_code/scripts/start-vnc.sh",
     "remoteUser": "user",
     "customizations": {
         "vscode": {
