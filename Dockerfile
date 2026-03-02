@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     xfce4 xfce4-terminal tigervnc-standalone-server novnc ngspice sudo \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     locales \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
