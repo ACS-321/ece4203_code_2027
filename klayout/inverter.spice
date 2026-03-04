@@ -1,0 +1,7 @@
+** sch_path: /home/leo/Nextcloud/Programmieren/ASIC/SKY130/klayout-sky130-inverter/schematic/inverter.sch
+.subckt inverter VDD IN OUT VSS
+*.PININFO IN:I VDD:I VSS:I OUT:O
+M1 OUT IN VSS VSS sky130_fd_pr__nfet_01v8 L=0.15 W=0.5 nf=1 m=1
+M2 OUT IN VDD VDD sky130_fd_pr__pfet_01v8 L=0.15 W=1.5 nf=1 m=1
+.ends
+.end

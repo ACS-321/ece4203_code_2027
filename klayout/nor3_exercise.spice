@@ -1,0 +1,14 @@
+
+.SUBCKT NOR3_exercise A B C Y VDD GND
+
+* ── Pull-up network:  ──────────────────────────────────────
+MP0  MID2  A  VDD  VDD  sky130_fd_pr__pfet_01v8  w=0.84  l=0.15
+MP1  MID1  B  MID2  VDD  sky130_fd_pr__pfet_01v8  w=0.84  l=0.15
+MP2  Y     C  MID1  VDD  sky130_fd_pr__pfet_01v8  w=0.84  l=0.15
+
+* ── Pull-down network:  ───────────────────────────────────
+MN0  Y    A  GND  GND  sky130_fd_pr__nfet_01v8  w=0.42  l=0.15
+MN1  Y    B  GND  GND  sky130_fd_pr__nfet_01v8  w=0.42  l=0.15
+MN2  Y    C  GND  GND  sky130_fd_pr__nfet_01v8  w=0.42  l=0.15
+
+.ENDS NOR3_exercise
