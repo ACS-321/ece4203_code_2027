@@ -12,3 +12,16 @@ alias oss_yosys='oss_cad_run yosys'
 
 alias klayout='klayout -e'
 
+alias cdhome='cd $HOME'
+alias cdwork='cd /workspaces/ece4203'
+
+KLAYOUT_PKG_DIR="$HOME/.klayout/salt"
+REPO_PKG_DIR="/workspaces/ece4203_code/scripts/salt"
+
+for pkg in "$REPO_PKG_DIR"/*/; do
+    pkg_name=$(basename "$pkg")
+    if [ ! -d "$KLAYOUT_PKG_DIR/$pkg_name" ]; then
+        echo "Installing KLayout package: $pkg_name"
+        cp -r "$pkg" "$KLAYOUT_PKG_DIR/"
+    fi
+done
