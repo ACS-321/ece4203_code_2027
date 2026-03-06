@@ -18,6 +18,8 @@ alias cdwork='cd /workspaces/ece4203'
 KLAYOUT_PKG_DIR="$HOME/.klayout/salt"
 REPO_PKG_DIR="/workspaces/ece4203_code/scripts/salt"
 
+mkdir -p "$KLAYOUT_PKG_DIR"
+
 for pkg in "$REPO_PKG_DIR"/*/; do
     pkg_name=$(basename "$pkg")
     if [ ! -d "$KLAYOUT_PKG_DIR/$pkg_name" ]; then
