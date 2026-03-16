@@ -22,8 +22,8 @@ SHELL := /bin/bash
 # ---------------------------------------------------------------
 YOSYS    := yosys
 STA      := sta        # OpenSTA, shipped with ORFS as 'sta'
-IVERILOG := iverilog
-VVP      := vvp
+IVERILOG := source /opt/oss-cad-suite/environment && iverilog
+VVP      := source /opt/oss-cad-suite/environment && vvp
 
 # ---------------------------------------------------------------
 # sky130hd paths
@@ -85,8 +85,9 @@ define SYNTH_RULE
 results/netlist_$(1).v: rtl/registered_adder.v synth/synth.tcl | results/
 	@echo "=== Synthesis WIDTH=$(1) ==="
 	WIDTH=$(1) LIBERTY=$(LIBERTY) \
-	    $(YOSYS) -D WIDTH=$(1) -l results/yosys_$(1).log synth/synth.tcl
+	    $(YOSYS) -l results/yosys_$(1).log -p "tcl synth/synth.tcl"
 endef
+
 $(foreach W,$(WIDTHS),$(eval $(call SYNTH_RULE,$(W))))
 
 # ---------------------------------------------------------------

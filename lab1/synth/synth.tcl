@@ -6,10 +6,10 @@
 # Outputs:
 #   results/netlist_<WIDTH>.v    — technology-mapped Verilog netlist
 #   results/yosys_<WIDTH>.log    — full log with stat report
-
+yosys -import
 # ---- Read RTL ----
 read_verilog -D WIDTH=$::env(WIDTH) rtl/registered_adder.v
-
+chparam -set WIDTH $::env(WIDTH)
 # ---- Elaborate ----
 # -flatten exposes the full adder cone as a single logic cone so that
 # ABC can see carry-chain structure across what were module boundaries.
