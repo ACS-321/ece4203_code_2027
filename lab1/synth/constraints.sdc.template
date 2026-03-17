@@ -1,0 +1,27 @@
+# ECE4203 Lab 1 — SDC Constraints
+# Tokens __WIDTH__ and __PERIOD__ are substituted by the Makefile.
+#
+# With fully registered inputs AND outputs, the only timing path
+# that matters is entirely internal:
+#
+#   input FF (Q) ──► adder carry chain ──► output FF (D)
+#
+# Input/output port constraints are still required by OpenSTA but
+# are set to very loose values so they never appear as critical paths.
+# This keeps student STA reports focused on the carry chain.
+
+# ---- Clock ----
+create_clock -name clk \
+    -period __PERIOD__ \
+    -waveform "0 [expr __PERIOD__ / 2.0]" \
+    [get_ports clk]
+
+# ---- Input delays (loose — ports feed input FFs directly) ----
+# 0.2 ns arrival after clock edge: inputs just need to reach the FF
+# D pin before setup, and that FF is the first thing in the design.
+set_input_delay -clock clk -max 0.2 [get_ports {a b cin rst_n}]
+set_input_delay -clock clk -min 0.0 [get_ports {a b cin rst_n}]
+
+# ---- Output delays (loose — outputs come directly from output FFs) ----
+set_output_delay -clock clk -max 0.2 [get_ports {sum cout}]
+set_output_delay -clock clk -min 0.0 [get_ports {sum cout}]

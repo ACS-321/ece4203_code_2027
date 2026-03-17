@@ -34,7 +34,7 @@ LIBERTY := /OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd__t
 # sky130 gate-level Verilog models (needed for gate-level simulation).
 # These ship with the PDK inside OSS CAD Suite.
 # Adjust if your container mounts the PDK elsewhere.
-SKY130_CELLS := /opt/oss-cad-suite/share/pdk/sky130A/libs.ref/sky130_fd_sc_hd/verilog
+SKY130_CELLS := /workspaces/ece4203_code/pdk/sky130_fd_sc_hd/verilog
 
 # ---------------------------------------------------------------
 # Sweep parameters
