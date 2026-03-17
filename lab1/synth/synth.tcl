@@ -1,37 +1,52 @@
 # ECE4203 Lab 1 — Yosys synthesis script (sky130hd)
 #
 # Called by the Makefile as:
-#   WIDTH=<N> LIBERTY=<path> yosys -D WIDTH=<N> -l results/yosys_<N>.log synth/synth.tcl
+#   WIDTH=<N> PERIOD=<P> LIBERTY=<path> ABC_PERIOD_PS=<ps> \
+#       yosys -l results/yosys_<N>_<P>.log -p "tcl synth/synth.tcl"
+#
+# Environment variables:
+#   WIDTH          — adder bit width (e.g. 8)
+#   PERIOD         — clock period in ns (e.g. 4.0) — used for output filename
+#   LIBERTY        — path to sky130hd liberty file
+#   ABC_PERIOD_PS  — combinational delay budget for ABC in picoseconds
+#                    = (PERIOD * 1000) - FF_setup_ps
+#                    tells ABC how aggressively to optimise for speed:
+#                      tight → larger drive-strength cells, may restructure logic
+#                      loose → smaller cells, optimises for area
 #
 # Outputs:
-#   results/netlist_<WIDTH>.v    — technology-mapped Verilog netlist
-#   results/yosys_<WIDTH>.log    — full log with stat report
+#   results/netlist_<WIDTH>_<PERIOD>.v   — technology-mapped netlist
+#   results/yosys_<WIDTH>_<PERIOD>.log   — full log (written by Makefile -l flag)
+
 yosys -import
+
 # ---- Read RTL ----
-read_verilog -D WIDTH=$::env(WIDTH) rtl/registered_adder.v
+read_verilog rtl/registered_adder.v
 chparam -set WIDTH $::env(WIDTH)
+
 # ---- Elaborate ----
-# -flatten exposes the full adder cone as a single logic cone so that
-# ABC can see carry-chain structure across what were module boundaries.
+# -flatten merges hierarchy so ABC sees the full carry cone as one
+# logic network and can restructure it freely.
 synth -top registered_adder -flatten
 
 # ---- FF mapping ----
-# Maps Yosys internal $_DFF_P_ / $_DFF_PN0_ primitives to liberty cells
-# (e.g. sky130_fd_sc_hd__dfxtp_1).
-# Must run BEFORE abc so ABC sees real cell timing for fanout/load.
+# Maps Yosys internal $_DFF_* primitives to sky130hd FF cells
+# (e.g. sky130_fd_sc_hd__dfxtp_1).  Must run before abc so ABC
+# accounts for FF input capacitance when sizing driver cells.
 dfflibmap -liberty $::env(LIBERTY)
 
 # ---- Combinational technology mapping ----
-# ABC maps the adder carry cone to sky130hd standard cells.
-# For wider adders it often selects sky130_fd_sc_hd__fah_1 (full adder)
-# and sky130_fd_sc_hd__fahcin_1 carry cells — students should look for
-# these in the netlist.
-abc -liberty $::env(LIBERTY)
+# -D <ps> sets the target combinational delay budget.
+# ABC will try to meet this target by selecting appropriate cell
+# sizes and logic structures.  Students can observe the effect by
+# comparing netlists synthesised at different periods.
+abc -liberty $::env(LIBERTY) -D $::env(ABC_PERIOD_PS)
 
-# ---- Report ----
+# ---- Area / cell report ----
+# Captured to results/yosys_<WIDTH>_<PERIOD>.log by the -l flag.
 stat -liberty $::env(LIBERTY)
 
-# ---- Write netlist ----
-# -noattr strips Yosys metadata attributes so the file is clean Verilog
-# that iverilog can compile directly alongside the sky130 cell models.
-write_verilog -noattr results/netlist_$::env(WIDTH).v
+# ---- Write mapped netlist ----
+# Filename includes both WIDTH and PERIOD so each (WIDTH, PERIOD)
+# pair produces a distinct file and runs don't overwrite each other.
+write_verilog -noattr results/netlist_$::env(WIDTH)_$::env(PERIOD).v
