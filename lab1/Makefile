@@ -164,6 +164,34 @@ sim_gl: results/netlist_$(WIDTH).v results/netlist_$(WIDTH).sdf
 # that generates the SDF (all periods write the same netlist SDF).
 results/netlist_$(WIDTH).sdf: results/sta_w$(WIDTH)p$(firstword $(PERIODS)).log
 
+results/netlist_$(WIDTH)_timed.v: \
+		results/netlist_$(WIDTH).v \
+		results/netlist_$(WIDTH).sdf \
+		scripts/sdf_inject.py
+		@echo "=== Injecting SDF delays into netlist (WIDTH=$(WIDTH)) ==="
+		python3 scripts/sdf_inject.py \
+			--sdf     results/netlist_$(WIDTH).sdf \
+			--netlist results/netlist_$(WIDTH).v \
+			--cells   $(SKY130_CELLS)/sky130_fd_sc_hd.v \
+			--out     results/netlist_$(WIDTH)_timed.v
+
+.PHONY: sim_timed
+sim_timed: results/netlist_$(WIDTH)_timed.v
+		@echo "=== Gate-Level Simulation with injected delays (WIDTH=$(WIDTH)) ==="
+		$(IVERILOG) -g2012 -g specify \
+			-D WIDTH=$(WIDTH) \
+			-D VCD_FILE=\"results/timed_$(WIDTH).vcd\" \
+			-D FUNCTIONAL \
+			-o results/sim_timed_$(WIDTH)_exe \
+			sim/tb_gl.v \
+			results/netlist_$(WIDTH)_timed.v \
+	    	$(SKY130_CELLS)/primitives.v \
+	    	$(SKY130_CELLS)/sky130_fd_sc_hd.v 
+		$(VVP) results/sim_timed_$(WIDTH)_exe | tee results/sim_timed_$(WIDTH).log
+		@echo ""
+		@echo "Waveform: results/timed_$(WIDTH).vcd"
+		@echo "Open with: gtkwave results/timed_$(WIDTH).vcd &"
+
 # ---------------------------------------------------------------
 # 5. Summary tables
 # ---------------------------------------------------------------
