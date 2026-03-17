@@ -8,7 +8,7 @@
 #   4. Writes an SDF file for back-annotated gate-level simulation
 
 read_liberty __LIBERTY__
-read_verilog results/netlist___WIDTH__.v
+read_verilog results/netlist___WIDTH_____PERIOD__.v
 link_design registered_adder
 
 read_sdc results/constraints_w__WIDTH__p__PERIOD__.sdc
@@ -36,4 +36,4 @@ report_check_types -max_slew -max_cap -max_fanout
 # synthesis-level SDF, which is appropriate before P&R.
 # Students annotate this into iverilog gate-level simulation to see
 # actual gate delays on the GTKWave waveform.
-write_sdf results/netlist___WIDTH__.sdf
+write_sdf results/netlist___WIDTH_____PERIOD__.sdf
