@@ -80,14 +80,19 @@ results/sim_rtl.log: rtl/registered_adder.v sim/tb_rtl.v | results/
 # ---------------------------------------------------------------
 # 2. Synthesis — one rule per WIDTH
 # ---------------------------------------------------------------
+
+# Convert period in ns to ps and subtract setup time
+# $(1) = period as float string e.g. "4.0"
+ns_to_ps = $(shell $(PYTHON) -c "print(int(float('$(1)') * 1000 - $(ABC_SETUP_PS)))")
+
 .PHONY: synth
 synth: $(foreach W,$(WIDTHS),$(foreach P,$(PERIODS),results/netlist_$(W)_$(P).v))
 
 define SYNTH_RULE
 results/netlist_$(1)_$(2).v: rtl/registered_adder.v synth/synth.tcl | results/
-	$(eval _PS := $(shell $(PYTHON) -c "print(int($(2)*1000 - $(ABC_SETUP_PS)))"))
-	@echo "=== Synthesis WIDTH=$(1) PERIOD=$(2)ns  ABC budget=$$(_PS)ps ==="
-	WIDTH=$(1) LIBERTY=$(LIBERTY) ABC_PERIOD_PS=$$(_PS) \
+	@echo "=== Synthesis WIDTH=$(1) PERIOD=$(2)ns ABC budget=$(call ns_to_ps,$(2))ps ==="
+	WIDTH=$(1) PERIOD=$(2) LIBERTY=$(LIBERTY) \
+	    ABC_PERIOD_PS=$(call ns_to_ps,$(2)) \
 	    $(YOSYS) -l results/yosys_$(1)_$(2).log -p "tcl synth/synth.tcl"
 endef
 $(foreach W,$(WIDTHS),$(foreach P,$(PERIODS),$(eval $(call SYNTH_RULE,$(W),$(P)))))
