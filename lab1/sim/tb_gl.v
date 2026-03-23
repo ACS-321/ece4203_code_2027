@@ -23,11 +23,11 @@
 `timescale 1ns/1ps
 
 `ifndef WIDTH
-  `define WIDTH 8
+`define WIDTH 8
 `endif
 
 `ifndef PERIOD
-  `define PERIOD 4
+`define PERIOD 4
 `endif
 
 // The gate-level netlist still instantiates module registered_adder,
@@ -36,114 +36,129 @@
 
 module tb_gl;
 
-    parameter WIDTH      = `WIDTH;
-    // Clock period for gate-level sim — use the same period you tested
-    // in STA so you can directly compare slack to simulation timing.
-    parameter CLK_PERIOD = `PERIOD; // 10 ns default; override with -D
+  parameter WIDTH = `WIDTH;
+  // Clock period for gate-level sim — use the same period you tested
+  // in STA so you can directly compare slack to simulation timing.
+  parameter CLK_PERIOD = `PERIOD;  // 10 ns default; override with -D
 
-    // ---- DUT signals ----
-    reg              clk, rst_n;
-    reg  [WIDTH-1:0] a, b;
-    reg              cin;
-    wire [WIDTH-1:0] sum;
-    wire             cout;
+  // ---- DUT signals ----
+  reg clk, rst_n;
+  reg [WIDTH-1:0] a, b;
+  reg              cin;
+  wire [WIDTH-1:0] sum;
+  wire             cout;
 
-    // ---- DUT: gate-level netlist ----
-    registered_adder dut (
-        .clk(clk), .rst_n(rst_n),
-        .a(a), .b(b), .cin(cin),
-        .sum(sum), .cout(cout)
-    );
+  // ---- DUT: gate-level netlist ----
+  registered_adder dut (
+      .clk(clk),
+      .rst_n(rst_n),
+      .a(a),
+      .b(b),
+      .cin(cin),
+      .sum(sum),
+      .cout(cout)
+  );
 
-    // ---- SDF back-annotation ----
-    // $sdf_annotate must be called at simulation time 0, before any
-    // clock edges, so the delays are in place from the first transition.
-    //
-    // The SDF_FILE macro is defined by the Makefile -D flag.
-    // The second argument scopes the annotation to the DUT instance.
-    //
-    // iverilog note: compile with -g2012 and link with the sky130
-    // cell models so that $sdf_annotate can find the cell UDP timing.
-    initial begin
+  // ---- SDF back-annotation ----
+  // $sdf_annotate must be called at simulation time 0, before any
+  // clock edges, so the delays are in place from the first transition.
+  //
+  // The SDF_FILE macro is defined by the Makefile -D flag.
+  // The second argument scopes the annotation to the DUT instance.
+  //
+  // iverilog note: compile with -g2012 and link with the sky130
+  // cell models so that $sdf_annotate can find the cell UDP timing.
+  initial begin
 `ifdef SDF_FILE
-        $sdf_annotate(`SDF_FILE, dut);
-        $display("SDF annotated: %s", `SDF_FILE);
+    $sdf_annotate(`SDF_FILE, dut);
+    $display("SDF annotated: %s", `SDF_FILE);
 `else
-        $display("WARNING: SDF_FILE not defined — running without delay annotation");
+    $display("WARNING: SDF_FILE not defined — running without delay annotation");
 `endif
-    end
+  end
 
-    // ---- VCD dump ----
-    // Open the waveform in GTKWave and zoom into a single clock cycle
-    // to see the carry ripple propagating through the adder cells.
-    initial begin
+  // ---- VCD dump ----
+  // Open the waveform in GTKWave and zoom into a single clock cycle
+  // to see the carry ripple propagating through the adder cells.
+  initial begin
 `ifdef VCD_FILE
-        $dumpfile(`VCD_FILE);
+    $dumpfile(`VCD_FILE);
 `else
-        $dumpfile("results/gl.vcd");
+    $dumpfile("results/gl.vcd");
 `endif
-        $dumpvars(0, tb_gl);
+    $dumpvars(0, tb_gl);
+  end
+
+  // ---- Clock ----
+  initial clk = 0;
+  always #(CLK_PERIOD / 2.0) clk = ~clk;
+
+  // ---- Test tracking ----
+  integer errors = 0;
+  integer tests = 0;
+
+  // Same 2-cycle latency as RTL: input reg (cycle 1) + output reg (cycle 2).
+  // With SDF annotation the outputs will have non-zero propagation delay
+  // after the clock edge — sample at CLK_PERIOD*0.9 after the edge
+  // (i.e., just before the next edge) to avoid metastability window.
+  task apply_and_check;
+    input [WIDTH-1:0] in_a, in_b;
+    input in_cin;
+    reg [WIDTH:0] full;
+    begin
+      full = {1'b0, in_a} + {1'b0, in_b} + in_cin;
+      @(negedge clk);
+      a   = in_a;
+      b   = in_b;
+      cin = in_cin;
+      @(posedge clk);
+      @(posedge clk);
+      #(CLK_PERIOD * 0.8);
+      tests = tests + 1;
+      if (sum !== full[WIDTH-1:0] || cout !== full[WIDTH]) begin
+        $display("FAIL  a=%0d b=%0d cin=%0d | sum=%0d cout=%0d (exp %0d/%0d)", in_a, in_b, in_cin,
+                 sum, cout, full[WIDTH-1:0], full[WIDTH]);
+        errors = errors + 1;
+      end else
+        $display("PASS  a=%0d b=%0d cin=%0d => sum=%0d cout=%0d", in_a, in_b, in_cin, sum, cout);
     end
+  endtask
 
-    // ---- Clock ----
-    initial clk = 0;
-    always #(CLK_PERIOD/2.0) clk = ~clk;
+  // ---- Stimulus ----
+  initial begin
+    rst_n = 0;
+    a = 0;
+    b = 0;
+    cin = 0;
+    repeat (3) @(posedge clk);
+    #(CLK_PERIOD * 0.8);
+    if (sum !== 0 || cout !== 0) begin
+      $display("FAIL  reset: sum=%0d cout=%0d", sum, cout);
+      errors = errors + 1;
+    end else $display("PASS  reset cleared outputs");
+    rst_n = 1;
 
-    // ---- Test tracking ----
-    integer errors = 0;
-    integer tests  = 0;
+    // All zeros
+    apply_and_check({WIDTH{1'b0}}, {WIDTH{1'b0}}, 1'b0);
 
-    // Same 2-cycle latency as RTL: input reg (cycle 1) + output reg (cycle 2).
-    // With SDF annotation the outputs will have non-zero propagation delay
-    // after the clock edge — sample at CLK_PERIOD*0.9 after the edge
-    // (i.e., just before the next edge) to avoid metastability window.
-    task apply_and_check;
-        input [WIDTH-1:0] in_a, in_b;
-        input             in_cin;
-        input [WIDTH-1:0] exp_sum;
-        input             exp_cout;
-        begin
-            @(negedge clk);
-            a   = in_a;
-            b   = in_b;
-            cin = in_cin;
-            // 2-cycle latency through the pipeline
-            @(posedge clk);
-            @(posedge clk);
-            // Sample near end of cycle — after all gate delays have settled
-            #(CLK_PERIOD * 0.8);
-            tests = tests + 1;
-            if (sum !== exp_sum || cout !== exp_cout) begin
-                $display("FAIL  a=%3d b=%3d cin=%0d | sum=%3d cout=%0d (exp %3d/%0d)",
-                    in_a, in_b, in_cin, sum, cout, exp_sum, exp_cout);
-                errors = errors + 1;
-            end else
-                $display("PASS  a=%3d b=%3d cin=%0d => sum=%3d cout=%0d",
-                    in_a, in_b, in_cin, sum, cout);
-        end
-    endtask
+    // Small values
+    apply_and_check({{(WIDTH - 4) {1'b0}}, 4'd10}, {{(WIDTH - 4) {1'b0}}, 4'd5}, 1'b0);
 
-    // ---- Stimulus ----
-    initial begin
-        rst_n = 0; a = 0; b = 0; cin = 0;
-        repeat(3) @(posedge clk);
-        #(CLK_PERIOD * 0.8);
-        if (sum !== 0 || cout !== 0) begin
-            $display("FAIL  reset: sum=%0d cout=%0d", sum, cout);
-            errors = errors + 1;
-        end else
-            $display("PASS  reset cleared outputs");
-        rst_n = 1;
+    // Max value (all ones)
+    apply_and_check({WIDTH{1'b1}}, {WIDTH{1'b0}}, 1'b0);  // MAX + 0
 
-        apply_and_check(8'd10,  8'd20,  1'b0, 8'd30,  1'b0);
-        apply_and_check(8'd200, 8'd100, 1'b0, 8'd44,  1'b1);
-        apply_and_check(8'd255, 8'd255, 1'b1, 8'd255, 1'b1);
-        apply_and_check(8'd127, 8'd127, 1'b1, 8'd255, 1'b0);
-        apply_and_check(8'd42,  8'd58,  1'b0, 8'd100, 1'b0);
+    // Overflow: MAX + 1 → sum=0, cout=1
+    apply_and_check({WIDTH{1'b1}}, {{(WIDTH - 1) {1'b0}}, 1'b1}, 1'b0);
 
-        repeat(4) @(posedge clk);
-        $display("\n%0d/%0d tests passed (gate-level + SDF).", tests - errors, tests);
-        $finish_and_return(errors);
-    end
+    // Half + half
+    apply_and_check({1'b0, {(WIDTH - 1) {1'b1}}}, {1'b0, {(WIDTH - 1) {1'b1}}}, 1'b1);
+
+    // cin propagation
+    apply_and_check({WIDTH{1'b1}}, {WIDTH{1'b1}}, 1'b1);  // MAX + MAX + 1
+
+    repeat (4) @(posedge clk);
+    $display("\n%0d/%0d tests passed (gate-level + SDF).", tests - errors, tests);
+    $finish_and_return(errors);
+  end
 
 endmodule
