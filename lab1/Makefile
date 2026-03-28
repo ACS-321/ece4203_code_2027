@@ -50,7 +50,7 @@ PERIODS := 1 4 16
 
 # sky130hd FF setup time subtracted from the period to give ABC
 # the combinational-only budget (ABC -D flag is in picoseconds).
-ABC_SETUP_PS := 160
+ABC_SETUP_PS := 210
 
 #NETLISTS := $(foreach W,$(WIDTHS),results/netlist_$(W).v)
 #STA_LOGS := $(foreach W,$(WIDTHS),$(foreach P,$(PERIODS),results/sta_w$(W)p$(P).log))
