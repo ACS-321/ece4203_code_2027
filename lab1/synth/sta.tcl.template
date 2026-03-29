@@ -12,6 +12,7 @@ read_verilog results/netlist___WIDTH_____PERIOD__.v
 link_design registered_adder
 
 read_sdc results/constraints_w__WIDTH__p__PERIOD__.sdc
+set_false_path -from [get_ports rst_n]
 
 # ---- Setup (max-delay) timing report ----
 # full_clock_expanded shows the launch and capture clock edges
@@ -27,6 +28,9 @@ report_checks \
 report_worst_slack -max
 report_wns
 report_tns
+set_power_activity -global -activity 0.2 -duty 0.5
+set_power_activity -clock clk -activity 1.0 -duty 0.5
+report_power
 
 # ---- DRC checks ----
 report_check_types -max_slew -max_cap -max_fanout

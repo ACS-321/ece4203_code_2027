@@ -50,7 +50,8 @@ PERIODS := 1 4 16
 
 # sky130hd FF setup time subtracted from the period to give ABC
 # the combinational-only budget (ABC -D flag is in picoseconds).
-ABC_SETUP_PS := 210
+# actually needs to include the Clk->Q delay as well.
+ABC_SETUP_PS := 520
 
 #NETLISTS := $(foreach W,$(WIDTHS),results/netlist_$(W).v)
 #STA_LOGS := $(foreach W,$(WIDTHS),$(foreach P,$(PERIODS),results/sta_w$(W)p$(P).log))
@@ -242,6 +243,43 @@ summary:
 	        printf "  %9s" "$${wns:--}"; \
 	    done; \
 	    echo ""; \
+	done
+	@echo ""
+	@echo "================================================================"
+	@echo " Power — Total (Watts)"
+	@echo "================================================================"
+	@printf "  %-6s" "WIDTH"
+	@for p in $(PERIODS); do printf "  %11s" "$${p}ns"; done
+	@echo ""
+	@printf "  %-6s" "-----"
+	@for p in $(PERIODS); do printf "  %11s" "-----------"; done
+	@echo ""
+	@for w in $(WIDTHS); do \
+	    printf "  %-6s" "$$w"; \
+	    for p in $(PERIODS); do \
+	        pwr=$$(grep "^Total" results/sta_w$${w}p$${p}.log 2>/dev/null \
+	               | awk '{print $$5}' | head -1); \
+	        printf "  %11s" "$${pwr:--}"; \
+	    done; \
+	    echo ""; \
+	done
+	@echo ""
+	@echo "================================================================"
+	@echo " Power — Sequential vs Combinational breakdown"
+	@echo "================================================================"
+	@printf "  %-6s  %-7s  %11s  %11s  %11s\n" "WIDTH" "PERIOD" "Sequential" "Combinator" "Total"
+	@printf "  %-6s  %-7s  %11s  %11s  %11s\n" "-----" "------" "-----------" "-----------" "-----------"
+	@for w in $(WIDTHS); do \
+	    for p in $(PERIODS); do \
+	        seq=$$(grep "^Sequential" results/sta_w$${w}p$${p}.log 2>/dev/null \
+	               | awk '{print $$5}' | head -1); \
+	        comb=$$(grep "^Combinational" results/sta_w$${w}p$${p}.log 2>/dev/null \
+	                | awk '{print $$5}' | head -1); \
+	        total=$$(grep "^Total" results/sta_w$${w}p$${p}.log 2>/dev/null \
+	                 | awk '{print $$5}' | head -1); \
+	        printf "  %-6s  %-7s  %11s  %11s  %11s\n" \
+	            "$$w" "$${p}ns" "$${seq:--}" "$${comb:--}" "$${total:--}"; \
+	    done; \
 	done
 	@echo ""
 
