@@ -45,9 +45,10 @@ t_versions() {
     yosys -V
     oss-yosys -V
     klayout -v
-    iverilog -V 2>&1 | head -1
+    # (no `| head`: with pipefail, the early close makes the producer fail)
+    iverilog -V 2>&1 | sed -n 1p
     verilator --version
-    ngspice -v 2>&1 | grep -m1 -i ngspice
+    ngspice -v 2>&1 | sed -n '/ngspice/{p;q}' 
     python3 -c "import matplotlib, pandas; print('matplotlib', matplotlib.__version__, 'pandas', pandas.__version__)"
     # The ORFS builds must win on PATH.
     [ "$(command -v yosys)" = /OpenROAD-flow-scripts/tools/install/yosys/bin/yosys ]
@@ -67,21 +68,27 @@ t_desktop() {
     pgrep -x xfce4-session >/dev/null
 }
 
-wait_window() {   # wait_window <regex> <seconds>
-    local i
+wait_window() {   # wait_window <title regex> <seconds>: a mapped window >= 200x100
+    local i tree
     for ((i = 0; i < $2; i++)); do
-        xwininfo -root -tree -display :1 2>/dev/null | grep -Eiq "$1" && return 0
+        tree="$(xwininfo -root -tree -display :1 2>/dev/null || true)"
+        if awk -v re="$1" '$0 ~ re && match($0, /\) +[0-9]+x[0-9]+/) {
+                split(substr($0, RSTART + 2, RLENGTH - 2), g, "x");
+                if (g[1] + 0 >= 200 && g[2] + 0 >= 100) { print "found:", $0; f = 1 } }
+                END { exit !f }' <<<"$tree"; then
+            return 0
+        fi
         sleep 1
     done
-    xwininfo -root -tree -display :1 | head -40
+    grep -Ei "$1" <<<"$tree" || echo "no window matching $1"
     return 1
 }
 
 t_klayout_gui() {
     set -e
-    DISPLAY=:1 klayout -e klayout/nand3_example.gds &
+    DISPLAY=:1 klayout -e klayout/nand3_example.gds > "${OUT}/klayout-app.log" 2>&1 &
     local pid=$!
-    wait_window 'klayout' 60
+    wait_window '"[^"]*KLayout[^"]*"' 60 || { tail -n 20 "${OUT}/klayout-app.log"; kill "$pid"; return 1; }
     kill "$pid"
 }
 
@@ -90,9 +97,9 @@ t_openroad_gui() {
     local odb
     odb="$(ls openroad_flow/results/sky130hd/gcd/base/6_final.odb 2>/dev/null || true)"
     printf '%s\n' ${odb:+"read_db $odb"} > "${OUT}/gui.tcl"
-    DISPLAY=:1 openroad -gui "${OUT}/gui.tcl" &
+    DISPLAY=:1 openroad -gui "${OUT}/gui.tcl" > "${OUT}/openroad-app.log" 2>&1 &
     local pid=$!
-    wait_window 'openroad' 90
+    wait_window '"[^"]*OpenROAD[^"]*"' 90 || { tail -n 20 "${OUT}/openroad-app.log"; kill "$pid"; return 1; }
     kill "$pid"
 }
 
@@ -116,8 +123,10 @@ meas dc vm when v(out)=v(in)
 .endc
 .end
 EOF
-    (cd "$d" && ngspice -b tb.spice) | tee "$d/out.txt"
-    grep -Eq '^vm += +[0-9.e+-]+' "$d/out.txt"
+    # ngspice -b can exit non-zero even when the analysis ran; check the result.
+    (cd "$d" && ngspice -b tb.spice > out.txt 2>&1) || true
+    cat "$d/out.txt"
+    awk '/^vm +=/ { v = $3 } END { exit !(v > 0.7 && v < 1.1) }' "$d/out.txt"
 }
 
 t_lab1() {

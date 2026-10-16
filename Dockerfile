@@ -30,6 +30,7 @@ RUN apt-get update \
         xfce4 xfce4-terminal \
         ngspice \
         sudo locales curl ca-certificates zstd xauth \
+ && (apt-get purge -y xfce4-screensaver light-locker || true) \
  && locale-gen en_US.UTF-8 \
  && rm -rf /var/lib/apt/lists/*
 
@@ -74,7 +75,14 @@ RUN printf '%s\n' \
         'export PDK_ROOT=/opt/pdk PDK=sky130A FLOW_HOME=/OpenROAD-flow-scripts/flow' \
         > /etc/profile.d/ece4203.sh \
  && printf '#!/bin/sh\nexec /opt/oss-cad-suite/bin/yosys "$@"\n' > /usr/local/bin/oss-yosys \
- && chmod 755 /usr/local/bin/oss-yosys
+ && chmod 755 /usr/local/bin/oss-yosys \
+ && if ! command -v sta >/dev/null; then \
+        printf '%s\n' '#!/bin/sh' \
+          '# ORFS 26Q4 ships no standalone OpenSTA; openroad embeds the same OpenSTA' \
+          '# commands (read_liberty, read_verilog, link_design, report_checks, write_sdf ...).' \
+          'exec openroad -no_splash -no_init "$@"' > /usr/local/bin/sta \
+     && chmod 755 /usr/local/bin/sta; \
+    fi
 
 # ------------------------------------------------------------------
 # Student account: uid 1000, passwordless sudo, no login password.

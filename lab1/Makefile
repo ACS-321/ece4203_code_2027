@@ -35,6 +35,9 @@ PDK      ?= sky130A
 SKY130_HD := $(PDK_ROOT)/$(PDK)/libs.ref/sky130_fd_sc_hd
 # Liberty file — typical corner, 25 °C, 1.8 V (other corners are in the same dir)
 LIBERTY := $(SKY130_HD)/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+# LEFs: only used when `sta` is OpenROAD's built-in OpenSTA (see sta.tcl.template)
+TECHLEF := $(SKY130_HD)/techlef/sky130_fd_sc_hd__nom.tlef
+CELLLEF := $(SKY130_HD)/lef/sky130_fd_sc_hd.lef
 # sky130 gate-level Verilog models (needed for gate-level simulation).
 SKY130_CELLS := $(SKY130_HD)/verilog
 # iverilog rejects the specify block in one cell model (SHORT => VPWR), so the
@@ -122,6 +125,8 @@ results/sta_w%.tcl: synth/sta.tcl.template | results/
 	$(eval _P := $(word 2,$(subst p, ,$*)))
 	sed \
 	    -e 's|__LIBERTY__|$(LIBERTY)|g' \
+	    -e 's|__TECHLEF__|$(TECHLEF)|g' \
+	    -e 's|__CELLLEF__|$(CELLLEF)|g' \
 	    -e 's/__WIDTH__/$(_W)/g' \
 	    -e 's/__PERIOD__/$(_P)/g' \
 	    $< > $@
