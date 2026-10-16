@@ -9,7 +9,7 @@ and in the file listed under "Where".
 | Component | Pin | Checked | Where | Notes |
 |---|---|---|---|---|
 | ORFS base image | `openroad/orfs:26Q3-705-gecb3cfdeb` @ `sha256:6da005d1c3447799f7401215174196c75ba9ec7e28417624d0c20225f85d594c` | 2026-10-16 | `Dockerfile` `ORFS_IMAGE` | Commit `ecb3cfdeb` is the ORFS git tag **26Q4** (quarterly release). There's no plain `26Q4` tag on Docker Hub. The 2026 image was `v3.0-4512-g528ad3d8a`, which is the **26Q1** tag |
-| ↳ OpenROAD / OpenSTA | as shipped in 26Q4 | — | — | `openroad`, `sta` in `/OpenROAD-flow-scripts/tools/install/OpenROAD/bin` |
+| ↳ OpenROAD / OpenSTA | as shipped in 26Q4 | — | — | `openroad` in `/OpenROAD-flow-scripts/tools/install/OpenROAD/bin`. 26Q4 has no standalone `sta`; `/usr/local/bin/sta` runs OpenROAD's built-in OpenSTA |
 | ↳ Yosys | 0.68 | — | — | ORFS build; it's the `yosys` on PATH |
 | ↳ KLayout | 0.30.12 | 2026-10-16 | — | Installed by ORFS; also the latest upstream release, so no separate install |
 | ↳ Ubuntu | 22.04 | — | — | |

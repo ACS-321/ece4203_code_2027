@@ -149,7 +149,7 @@ step klayout-gui     t_klayout_gui
 step ngspice-sky130  t_ngspice_sky130
 step lab1            t_lab1
 if [ -z "${QUICK:-}" ]; then
-    step orfs-gcd-sky130hd   t_orfs DESIGN_CONFIG=/OpenROAD-flow-scripts/flow/designs/sky130hd/gcd/config.mk
+    step orfs-gcd-sky130hd   t_orfs DESIGN=gcd PLATFORM=sky130hd
     step orfs-registered-adder t_orfs DESIGN=registered_adder PLATFORM=sky130hd
 fi
 step openroad-gui    t_openroad_gui
