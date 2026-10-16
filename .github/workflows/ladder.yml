@@ -1,0 +1,114 @@
+# Run the example design ladder through ORFS on both platforms, using the
+# published image, and collect metrics (CSV + plots) and runtimes.
+# Each design x platform is its own job on a 4-vCPU runner, so the reported
+# runtimes are what a 4-core Codespace should see.
+name: ladder
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Image to run in
+        default: ghcr.io/dvanblerkom/ece4203:2027-dev
+      include_ibex:
+        description: Also run ibex (~30-60 min per platform)
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - openroad_flow/**
+      - scripts/orfs_metrics.py
+      - .github/workflows/ladder.yml
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: ladder-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: ${{ inputs.image || 'ghcr.io/dvanblerkom/ece4203:2027-dev' }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [sky130hd, asap7]
+        design: [registered_adder, gcd, riscvsingle, aes, ibex]
+    steps:
+      - name: Skip ibex unless requested
+        id: skip
+        run: |
+          if [ "${{ matrix.design }}" = ibex ] && [ "${{ inputs.include_ibex }}" != true ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.skip.outputs.skip != 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: ORFS flow
+        if: steps.skip.outputs.skip != 'true'
+        shell: bash
+        run: |
+          d=${{ matrix.design }} p=${{ matrix.platform }}
+          # Local designs win; otherwise use ORFS's own config in the image.
+          cfg="openroad_flow/designs/$p/$d/config.mk"
+          case "$d" in registered_adder|riscvsingle) ;; *) cfg="$FLOW_HOME/designs/$p/$d/config.mk" ;; esac
+          nproc; free -g
+          time make -C openroad_flow DESIGN_CONFIG="$(readlink -f "$cfg")" all
+      # Annotations stay readable through the API even when raw job logs are not.
+      - name: Annotate failure with the last ORFS log
+        if: failure() && steps.skip.outputs.skip != 'true'
+        shell: bash
+        run: |
+          # shellcheck disable=SC2012  # ORFS log names are simple
+          f=$(ls -t openroad_flow/logs/*/*/*/*.log 2>/dev/null | head -n 1 || true)
+          msg="$( { echo "last log: ${f:-none}"; [ -n "$f" ] && tail -n 30 "$f"; } | cut -c1-200)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::error title=${{ matrix.design }}/${{ matrix.platform }} failed::${msg:0:3500}"
+      - name: Upload logs and reports
+        if: always() && steps.skip.outputs.skip != 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: run-${{ matrix.design }}-${{ matrix.platform }}
+          path: |
+            openroad_flow/logs/
+            openroad_flow/reports/
+            openroad_flow/results/*/*/*/*.sdc
+          if-no-files-found: warn
+          retention-days: 14
+
+  metrics:
+    needs: run
+    if: always()
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ inputs.image || 'ghcr.io/dvanblerkom/ece4203:2027-dev' }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: run-*
+          path: openroad_flow
+          merge-multiple: true
+      - name: Metrics
+        shell: bash
+        run: |
+          python3 scripts/orfs_metrics.py --work openroad_flow --out metrics | tee -a "$GITHUB_STEP_SUMMARY"
+          # Same table as an annotation (readable through the API).
+          msg="$(cut -c1-400 metrics/metrics.csv)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\r'/}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::notice title=ladder metrics.csv::${msg:0:3800}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ladder-metrics
+          path: metrics/
+          retention-days: 30
