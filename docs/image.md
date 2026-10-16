@@ -39,10 +39,10 @@ The PDK comes from the same open_pdks release tarballs `ciel` uses, downloaded d
 
 ## Building and publishing
 
-`.github/workflows/image.yml` uses [devcontainers/ci](https://github.com/devcontainers/ci) to:
-1. build `Dockerfile`,
-2. add the features from `.devcontainer/build/devcontainer.json`,
-3. start the container and run `docker/smoke-test.sh` inside it,
+`.github/workflows/image.yml` uses the [devcontainer CLI](https://github.com/devcontainers/cli) to:
+1. build `Dockerfile` and add the features from `.devcontainer/build/devcontainer.json`,
+2. start the container and run `docker/smoke-test.sh` inside it,
+3. upload the smoke-test logs and ORFS reports as a workflow artifact,
 4. push to GHCR, only if the smoke test passed.
 
 The features' entrypoints, `containerEnv` and `remoteUser` are stored in the image's `devcontainer.metadata` label, so `.devcontainer/devcontainer.json` only needs the image name.

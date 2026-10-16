@@ -9,6 +9,10 @@
 ARG ORFS_IMAGE=openroad/orfs:26Q3-705-gecb3cfdeb@sha256:6da005d1c3447799f7401215174196c75ba9ec7e28417624d0c20225f85d594c
 FROM ${ORFS_IMAGE}
 
+# Links the GHCR package to this repository (permissions, README, "Packages" sidebar).
+LABEL org.opencontainers.image.source="https://github.com/dvanblerkom/ece4203_code_2027" \
+      org.opencontainers.image.description="Cal Poly ECE4203: ORFS + OSS CAD Suite + sky130A PDK + noVNC desktop"
+
 ARG OSS_CAD_DATE=2026-10-16
 ARG OSS_CAD_SHA256=95aead487287adf8fbbe965799e88e2ccb12a544f3d0a27b27f80bfc7c892911
 ARG OPEN_PDKS_VERSION=1e3554706ddbb2529193bdabbc7128296f3cb44a

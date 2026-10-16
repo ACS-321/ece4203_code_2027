@@ -33,7 +33,9 @@ and in the file listed under "Where".
 |---|---|---|
 | actions/checkout | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
 | docker/login-action | v4.6.0 | `dbcb813823bdd20940b903addbd779551569679f` |
-| devcontainers/ci | v0.3.1900000450 | `513af61f4de4f75d37e4438f184ba4358f0fc1ca` |
+| actions/setup-node | v7.1.0 (Node 22) | `949feb2413d6458794dcd2491c4babbbce0c15c1` |
+| actions/upload-artifact | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` |
+| @devcontainers/cli (npm) | 0.89.0 | — |
 | Runner | `ubuntu-24.04` | |
 
 ## Published image
