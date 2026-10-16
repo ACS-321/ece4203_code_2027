@@ -27,7 +27,7 @@ transistors inside. That's all place and route needs.
 | Variable | What it does here |
 |---|---|
 | `ADDITIONAL_LEFS` / `ADDITIONAL_LIBS` | add the macro's abstract and timing model |
-| `MACRO_PLACEMENT_TCL` | `riscv32i_macros/macros.tcl`: `place_macro -macro_name dmem.dmem0 -location {x y} -orientation MY` |
+| `MACRO_PLACEMENT_TCL` | `riscv32i_macros/macros.tcl`: finds the four macro instances in the database, then `place_macro -macro_name <inst> -location {x y} -orientation MY` |
 | `MACRO_PLACE_HALO` | keep-out ring (µm) around each macro where no standard cells go |
 | (none) | without a placement file, ORFS's RTL macro placer (RTLMP) chooses positions; that's ORFS's `riscv32i` |
 | PDN | the asap7 platform PDN adds a macro grid that connects the SRAMs' power pins to the core grid |
@@ -94,12 +94,12 @@ iverilog -g2012 -o tb tb_padring_counter.v padring_counter.v $FLOW_HOME/platform
 
 **In the GUI**
 - The whole die: pads, corners, fillers, bond pads, the seal ring at the edge, and the core power ring.
-- Zoom into one output pad: `c2p` from the core, the pad's driver, and the bond pad on top.
-- Follow `VDD` from the `pad_vdd` cell to the core ring and the Metal1 rails.
+- Zoom into one output pad (`sg13g2_IOPad_q0`): `c2p` from the core, the pad's driver, and the bond pad on top.
+- Follow `VDD` from the `sg13g2_IOPadVdd_inst` cell to the core ring and the Metal1 rails.
 
 **Questions**
 1. The core logic is a few hundred µm², but the die is 1.05 mm on a side. What sets the die size? This is called "pad limited". How many pads per side could the same die hold?
-2. The clock is created on `pad_clk/p2c`, not on the port `clk_PAD`. Why? What delay does the input pad add, and where would you find it?
+2. The clock is created on `sg13g2_IOPad_clk/p2c`, not on the port `clk_PAD`. Why? What delay does the input pad add, and where would you find it?
 3. Why are there separate core (`vdd/vss`) and I/O (`iovdd/iovss`) supply pads? What would you change for a design drawing 100 mA?
 
 ---

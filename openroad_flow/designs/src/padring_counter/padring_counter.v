@@ -8,6 +8,8 @@
 //            sg13g2_IOPadVdd/Vss       core supply (1.2 V) pads
 //            sg13g2_IOPadIOVdd/IOVss   pad-ring I/O supply (3.3 V) pads
 // The instance names are what config.mk lists in IO_NORTH/EAST/SOUTH/WEST_PINS.
+// They must start with sg13g2_IOPad: the platform pad.tcl puts a bond pad on
+// every instance matching sg13g2_IOPad*.
 
 module counter8 (
   input  wire       clk,
@@ -28,25 +30,25 @@ module padring_counter_top (
   wire       clk, rst_n, en, up;
   wire [7:0] q;
 
-  sg13g2_IOPadIn pad_clk   (.pad(clk_PAD),   .p2c(clk));
-  sg13g2_IOPadIn pad_rst_n (.pad(rst_n_PAD), .p2c(rst_n));
-  sg13g2_IOPadIn pad_en    (.pad(en_PAD),    .p2c(en));
-  sg13g2_IOPadIn pad_up    (.pad(up_PAD),    .p2c(up));
+  sg13g2_IOPadIn sg13g2_IOPad_clk   (.pad(clk_PAD),   .p2c(clk));
+  sg13g2_IOPadIn sg13g2_IOPad_rst_n (.pad(rst_n_PAD), .p2c(rst_n));
+  sg13g2_IOPadIn sg13g2_IOPad_en    (.pad(en_PAD),    .p2c(en));
+  sg13g2_IOPadIn sg13g2_IOPad_up    (.pad(up_PAD),    .p2c(up));
 
-  sg13g2_IOPadOut4mA pad_q0 (.c2p(q[0]), .pad(q0_PAD));
-  sg13g2_IOPadOut4mA pad_q1 (.c2p(q[1]), .pad(q1_PAD));
-  sg13g2_IOPadOut4mA pad_q2 (.c2p(q[2]), .pad(q2_PAD));
-  sg13g2_IOPadOut4mA pad_q3 (.c2p(q[3]), .pad(q3_PAD));
-  sg13g2_IOPadOut4mA pad_q4 (.c2p(q[4]), .pad(q4_PAD));
-  sg13g2_IOPadOut4mA pad_q5 (.c2p(q[5]), .pad(q5_PAD));
-  sg13g2_IOPadOut4mA pad_q6 (.c2p(q[6]), .pad(q6_PAD));
-  sg13g2_IOPadOut4mA pad_q7 (.c2p(q[7]), .pad(q7_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q0 (.c2p(q[0]), .pad(q0_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q1 (.c2p(q[1]), .pad(q1_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q2 (.c2p(q[2]), .pad(q2_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q3 (.c2p(q[3]), .pad(q3_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q4 (.c2p(q[4]), .pad(q4_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q5 (.c2p(q[5]), .pad(q5_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q6 (.c2p(q[6]), .pad(q6_PAD));
+  sg13g2_IOPadOut4mA sg13g2_IOPad_q7 (.c2p(q[7]), .pad(q7_PAD));
 
   // Supply pads have no signal ports; (* keep *) stops synthesis removing them.
-  (* keep *) sg13g2_IOPadVdd   pad_vdd   ();
-  (* keep *) sg13g2_IOPadVss   pad_vss   ();
-  (* keep *) sg13g2_IOPadIOVdd pad_iovdd ();
-  (* keep *) sg13g2_IOPadIOVss pad_iovss ();
+  (* keep *) sg13g2_IOPadVdd   sg13g2_IOPadVdd_inst   ();
+  (* keep *) sg13g2_IOPadVss   sg13g2_IOPadVss_inst   ();
+  (* keep *) sg13g2_IOPadIOVdd sg13g2_IOPadIOVdd_inst ();
+  (* keep *) sg13g2_IOPadIOVss sg13g2_IOPadIOVss_inst ();
 
   counter8 core (.clk(clk), .rst_n(rst_n), .en(en), .up(up), .q(q));
 endmodule

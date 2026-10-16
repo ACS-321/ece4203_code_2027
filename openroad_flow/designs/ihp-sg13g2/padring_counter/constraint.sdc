@@ -2,8 +2,8 @@
 # the pad cell's core-side pin (p2c), as in the ORFS reference design.
 current_design padring_counter_top
 set clk_period 10.0
-create_clock [get_pins pad_clk/p2c] -name clk_core -period $clk_period
-set_ideal_network [get_pins pad_clk/p2c]
+create_clock [get_pins sg13g2_IOPad_clk/p2c] -name clk_core -period $clk_period
+set_ideal_network [get_pins sg13g2_IOPad_clk/p2c]
 create_clock -name vclk_core -period $clk_period
 set_clock_uncertainty 0.15 [get_clocks clk_core]
 

@@ -19,10 +19,10 @@ export SEAL_GDS  = $(FLOW_HOME)/designs/ihp-sg13g2/i2c-gpio-expander/sealring.gd
 
 export FOOTPRINT_TCL = $(PLATFORM_DIR)/pad.tcl
 # Pad order on each side (instance names from padring_counter.v), counter-clockwise.
-export IO_NORTH_PINS = pad_q4 pad_q5 pad_q6 pad_q7
-export IO_EAST_PINS  = pad_vdd pad_vss pad_q2 pad_q3
-export IO_SOUTH_PINS = pad_clk pad_rst_n pad_en pad_up
-export IO_WEST_PINS  = pad_q0 pad_q1 pad_iovss pad_iovdd
+export IO_NORTH_PINS = sg13g2_IOPad_q4 sg13g2_IOPad_q5 sg13g2_IOPad_q6 sg13g2_IOPad_q7
+export IO_EAST_PINS  = sg13g2_IOPadVdd_inst sg13g2_IOPadVss_inst sg13g2_IOPad_q2 sg13g2_IOPad_q3
+export IO_SOUTH_PINS = sg13g2_IOPad_clk sg13g2_IOPad_rst_n sg13g2_IOPad_en sg13g2_IOPad_up
+export IO_WEST_PINS  = sg13g2_IOPad_q0 sg13g2_IOPad_q1 sg13g2_IOPadIOVss_inst sg13g2_IOPadIOVdd_inst
 
 export PDN_TCL = $(DESIGN_HOME)/$(PLATFORM)/$(DESIGN_NICKNAME)/pdn.tcl
 
