@@ -8,6 +8,11 @@
 #   make DESIGN=gcd clean_all
 #   make list                             # designs available here and in ORFS
 #
+# Comparing two technologies (sky130hd = 130 nm, asap7 = 7 nm predictive):
+#   make DESIGN=gcd both                  # run DESIGN on every platform in PLATFORMS
+#   make ladder                           # every design in LADDER on every platform
+#   make metrics                          # metrics/metrics.csv + plots from finished runs
+#
 # Designs under ./designs/<platform>/<design>/ win over ORFS's own. Results, logs and
 # reports go to ./results, ./logs, ./reports and ./objects in this directory
 # (WORK_HOME). The ORFS flow itself (scripts, platforms) is not copied here; it is
@@ -27,6 +32,11 @@ endif
 DESIGN_HOME ?= $(abspath $(dir $(DESIGN_CONFIG))/../..)
 WORK_HOME   ?= $(CURDIR)
 
+PLATFORMS ?= sky130hd asap7
+# Small -> medium. Add ibex for a bigger core (~30-60 min per platform):
+#   make ladder LADDER="registered_adder gcd riscvsingle aes ibex"
+LADDER    ?= registered_adder gcd riscvsingle aes
+
 ORFS_MAKE = $(MAKE) --no-print-directory -f $(ORFS_FLOW)/Makefile \
     FLOW_HOME=$(ORFS_FLOW) \
     DESIGN_CONFIG=$(abspath $(DESIGN_CONFIG)) \
@@ -34,7 +44,7 @@ ORFS_MAKE = $(MAKE) --no-print-directory -f $(ORFS_FLOW)/Makefile \
     WORK_HOME=$(WORK_HOME)
 
 .DEFAULT_GOAL := all
-.PHONY: all list help
+.PHONY: all list help both ladder metrics
 
 all:
 	@test -f "$(DESIGN_CONFIG)" || { echo "No config.mk for DESIGN=$(DESIGN) PLATFORM=$(PLATFORM) ($(DESIGN_CONFIG)). Try: make list"; exit 1; }
@@ -47,8 +57,27 @@ list:
 	@cd $(ORFS_FLOW)/designs && for p in sky130hd asap7 nangate45 ihp-sg13g2 gf180; do \
 	    printf "  %-11s" $$p; ls -d $$p/*/ 2>/dev/null | xargs -n1 basename | tr '\n' ' '; echo; done
 
+both:
+	@set -e; for p in $(PLATFORMS); do \
+	    echo "=== $(DESIGN) on $$p ==="; \
+	    $(MAKE) --no-print-directory DESIGN=$(DESIGN) PLATFORM=$$p all; \
+	done
+
+# Keeps going after a failed run so one problem doesn't stop the whole ladder;
+# the summary at the end lists what failed.
+ladder:
+	@failed=""; for d in $(LADDER); do for p in $(PLATFORMS); do \
+	    echo "=== $$d on $$p ==="; \
+	    $(MAKE) --no-print-directory DESIGN=$$d PLATFORM=$$p all || failed="$$failed $$d/$$p"; \
+	done; done; \
+	$(MAKE) --no-print-directory metrics; \
+	if [ -n "$$failed" ]; then echo "FAILED:$$failed"; exit 1; fi
+
+metrics:
+	python3 $(CURDIR)/../scripts/orfs_metrics.py --work $(WORK_HOME) --out $(WORK_HOME)/metrics
+
 help:
-	@sed -n '3,13p' $(firstword $(MAKEFILE_LIST))
+	@sed -n '3,19p' $(firstword $(MAKEFILE_LIST))
 
 # Everything else is passed straight to ORFS.
 Makefile: ;

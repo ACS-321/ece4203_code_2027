@@ -1,3 +1,5 @@
 
 # CI smoke-test output
 /smoke-out/
+__pycache__/
+*.pyc
