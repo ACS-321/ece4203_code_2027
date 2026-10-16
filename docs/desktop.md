@@ -3,7 +3,8 @@
 The Codespace runs a Linux desktop (XFCE) inside a TigerVNC server. You view it in
 your browser through noVNC. Both come from the official
 [`desktop-lite`](https://github.com/devcontainers/features/tree/main/src/desktop-lite)
-devcontainer feature, version 1.2.10.
+devcontainer feature, version 1.2.10. The feature is baked into the image by CI
+(`.devcontainer/build/devcontainer.json`), so it isn't reinstalled for each Codespace.
 
 | What | Where |
 |---|---|

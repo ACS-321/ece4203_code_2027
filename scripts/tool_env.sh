@@ -5,17 +5,12 @@ source /OpenROAD-flow-scripts/env.sh
 # Repo root, derived from this file's location, so the repo can have any name.
 ECE4203_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-oss_cad_run() {
-    (source /opt/oss-cad-suite/environment && "$@")
-}
+# FLOW_HOME must stay the ORFS flow dir (set by env.sh); our designs live here:
+export ECE4203_FLOW="${ECE4203_REPO}/openroad_flow"
 
-export FLOW_HOME="${ECE4203_REPO}/openroad_flow"
-export YOSYS_EXE="/OpenROAD-flow-scripts/tools/install/yosys/bin/yosys"
-export OPENROAD_EXE="/OpenROAD-flow-scripts/tools/install/OpenROAD/bin/openroad"
-
-alias iverilog='oss_cad_run iverilog'
-alias gtkwave='oss_cad_run gtkwave'
-alias oss_yosys='oss_cad_run yosys'
+# OSS CAD Suite tools (iverilog, gtkwave, verilator, ...) are on PATH after the
+# ORFS tools; `yosys` is the ORFS build. The OSS CAD yosys is `oss-yosys`.
+alias oss_yosys='oss-yosys'
 
 alias klayout='klayout -e'
 
