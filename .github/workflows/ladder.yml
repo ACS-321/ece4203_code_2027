@@ -61,6 +61,16 @@ jobs:
           case "$d" in registered_adder|riscvsingle) ;; *) cfg="$FLOW_HOME/designs/$p/$d/config.mk" ;; esac
           nproc; free -g
           time make -C openroad_flow DESIGN_CONFIG="$(readlink -f "$cfg")" all
+      # Annotations stay readable through the API even when raw job logs are not.
+      - name: Annotate failure with the last ORFS log
+        if: failure() && steps.skip.outputs.skip != 'true'
+        shell: bash
+        run: |
+          # shellcheck disable=SC2012  # ORFS log names are simple
+          f=$(ls -t openroad_flow/logs/*/*/*/*.log 2>/dev/null | head -n 1 || true)
+          msg="$( { echo "last log: ${f:-none}"; [ -n "$f" ] && tail -n 30 "$f"; } | cut -c1-200)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::error title=${{ matrix.design }}/${{ matrix.platform }} failed::${msg:0:3500}"
       - name: Upload logs and reports
         if: always() && steps.skip.outputs.skip != 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -90,7 +100,13 @@ jobs:
           path: openroad_flow
           merge-multiple: true
       - name: Metrics
-        run: python3 scripts/orfs_metrics.py --work openroad_flow --out metrics | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash
+        run: |
+          python3 scripts/orfs_metrics.py --work openroad_flow --out metrics | tee -a "$GITHUB_STEP_SUMMARY"
+          # Same table as an annotation (readable through the API).
+          msg="$(cut -c1-400 metrics/metrics.csv)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::notice title=ladder metrics.csv::${msg:0:3800}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ladder-metrics
