@@ -171,7 +171,7 @@ def fmt(v, col):
 
 def write_csv(rows, path):
     with open(path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=COLUMNS, extrasaction="ignore")
+        w = csv.DictWriter(fh, fieldnames=COLUMNS, extrasaction="ignore", lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({c: fmt(r.get(c), c) for c in COLUMNS})
