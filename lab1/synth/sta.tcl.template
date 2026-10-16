@@ -7,6 +7,13 @@
 #   3. Reports setup timing (critical path, WNS, TNS)
 #   4. Writes an SDF file for back-annotated gate-level simulation
 
+# `sta` in the 2027 image runs the OpenSTA built into OpenROAD, which needs the
+# technology and cell LEFs before link_design. Standalone OpenSTA has no
+# read_lef command, so this block is skipped there.
+if {[llength [info commands read_lef]]} {
+    read_lef __TECHLEF__
+    read_lef __CELLLEF__
+}
 read_liberty __LIBERTY__
 read_verilog results/netlist___WIDTH_____PERIOD__.v
 link_design registered_adder

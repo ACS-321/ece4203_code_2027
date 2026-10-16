@@ -1,0 +1,37 @@
+{
+    // Used only to BUILD the image (.github/workflows/image.yml via devcontainers/ci).
+    // The devcontainer CLI bakes these features into the image and records their
+    // entrypoints, containerEnv and remoteUser in the image's "devcontainer.metadata"
+    // label, so students' Codespaces get them without reinstalling anything.
+    // Students use ../devcontainer.json, which only references the published image.
+    "name": "ECE4203 image build",
+    "build": {
+        "dockerfile": "../../Dockerfile",
+        "context": "../.."
+    },
+    "features": {
+        // TigerVNC + noVNC desktop, started by the container entrypoint and
+        // restarted automatically if it exits.
+        "ghcr.io/devcontainers/features/desktop-lite:1.2.10": {
+            "password": "ece4203",
+            "noVncVersion": "1.6.0",
+            "webPort": "6080",
+            "vncPort": "5901"
+        },
+        // SSH server so "gh codespace ssh" works (X11-forwarding fallback).
+        "ghcr.io/devcontainers/features/sshd:1.1.0": {}
+    },
+    "overrideFeatureInstallOrder": [
+        "ghcr.io/devcontainers/features/desktop-lite",
+        "ghcr.io/devcontainers/features/sshd"
+    ],
+    "containerEnv": {
+        // desktop-lite 1.2.10 only enables VNC password auth when this is set at
+        // runtime; its "password" option alone just writes the password file.
+        "VNC_PASSWORD": "ece4203",
+        // Initial size only; noVNC "Remote resizing" follows the browser window.
+        "VNC_RESOLUTION": "1600x900x24",
+        "VNC_DPI": "96"
+    },
+    "remoteUser": "user"
+}
