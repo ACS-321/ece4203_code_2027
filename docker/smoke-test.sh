@@ -10,6 +10,15 @@ mkdir -p "$OUT"
 declare -a RESULTS=()
 fails=0
 
+# In CI (CI_ANNOTATE=1) also emit GitHub annotations, which stay readable through
+# the API even when the raw job log is not.
+annotate() {   # annotate <error|notice> <title> <text>
+    [ -n "${CI_ANNOTATE:-}" ] || return 0
+    local msg="${3:0:3500}"
+    msg="${msg//'%'/'%25'}"; msg="${msg//$'\r'/}"; msg="${msg//$'\n'/'%0A'}"
+    echo "::$1 title=$2::${msg}"
+}
+
 step() {   # step <name> <command...>
     local name="$1"; shift
     local log="${OUT}/${name}.log" t0=$SECONDS
@@ -21,6 +30,7 @@ step() {   # step <name> <command...>
     else
         RESULTS+=("FAIL  ${name}  ($((SECONDS - t0)) s)  -> ${log}")
         fails=$((fails + 1))
+        annotate error "smoke: ${name} failed" "$(tail -n 40 "$log")"
     fi
     tail -n 25 "$log"
     echo "::endgroup::"
@@ -139,4 +149,5 @@ echo
 echo "================ smoke test summary ================"
 printf '%s\n' "${RESULTS[@]}"
 echo "logs: ${OUT}"
+annotate notice "smoke test summary (${fails} failed)" "$(printf '%s\n' "${RESULTS[@]}")"
 exit "$fails"

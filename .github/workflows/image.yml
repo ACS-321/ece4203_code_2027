@@ -115,7 +115,7 @@ jobs:
         run: |
           # shellcheck disable=SC2016  # $PWD must expand inside the container
           devcontainer exec --workspace-folder . --config .devcontainer/build/devcontainer.json \
-            bash -c 'SMOKE_OUT="$PWD/smoke-out" bash docker/smoke-test.sh'
+            bash -c 'CI_ANNOTATE=1 SMOKE_OUT="$PWD/smoke-out" bash docker/smoke-test.sh'
 
       - name: Upload smoke-test logs and ORFS reports
         if: always()
