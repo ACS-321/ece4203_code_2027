@@ -58,7 +58,7 @@ jobs:
           d=${{ matrix.design }} p=${{ matrix.platform }}
           # Local designs win; otherwise use ORFS's own config in the image.
           cfg="openroad_flow/designs/$p/$d/config.mk"
-          case "$d" in registered_adder|riscvsingle) ;; *) cfg="$FLOW_HOME/designs/$p/$d/config.mk" ;; esac
+          [ -f "$cfg" ] || cfg="$FLOW_HOME/designs/$p/$d/config.mk"
           nproc; free -g
           time make -C openroad_flow DESIGN_CONFIG="$(readlink -f "$cfg")" all
       # Annotations stay readable through the API even when raw job logs are not.
