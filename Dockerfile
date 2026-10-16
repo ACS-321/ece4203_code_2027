@@ -52,6 +52,10 @@ ENV PDK_ROOT=/opt/pdk \
     PDK=sky130A
 RUN install-pdk.sh "${OPEN_PDKS_VERSION}" "${PDK_ROOT}"
 
+# matplotlib for scripts/orfs_metrics.py plots (numpy and pandas come with ORFS).
+ARG MATPLOTLIB_VERSION=3.10.9
+RUN python3 -m pip install --no-cache-dir "matplotlib==${MATPLOTLIB_VERSION}"
+
 # ------------------------------------------------------------------
 # PATH: ORFS tools first, OSS CAD Suite LAST.
 # `yosys`, `openroad` and `sta` are always the ORFS builds the flow was tested

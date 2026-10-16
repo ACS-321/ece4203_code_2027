@@ -38,6 +38,7 @@ t_versions() {
     iverilog -V 2>&1 | head -1
     verilator --version
     ngspice -v 2>&1 | grep -m1 -i ngspice
+    python3 -c "import matplotlib, pandas; print('matplotlib', matplotlib.__version__, 'pandas', pandas.__version__)"
     # The ORFS builds must win on PATH.
     [ "$(command -v yosys)" = /OpenROAD-flow-scripts/tools/install/yosys/bin/yosys ]
     [ "$(command -v openroad)" = /OpenROAD-flow-scripts/tools/install/OpenROAD/bin/openroad ]

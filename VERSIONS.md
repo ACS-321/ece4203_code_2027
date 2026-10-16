@@ -15,6 +15,7 @@ and in the file listed under "Where".
 | ↳ Ubuntu | 22.04 | — | — | |
 | OSS CAD Suite | `2026-10-16`, sha256 `95aead487287adf8fbbe965799e88e2ccb12a544f3d0a27b27f80bfc7c892911` | 2026-10-16 | `Dockerfile` `OSS_CAD_DATE`, `OSS_CAD_SHA256` | 2505 MB → 1515 MB after `docker/prune-oss-cad.sh` removes the FPGA tools. Includes iverilog 14.0 (devel), Verilator 5.053 (devel), GHDL 7.0-dev, cocotb 2.1.0.dev, Yosys 0.70+145 (as `oss-yosys`), z3 4.15.5, Yices 2.7.0, Bitwuzla 0.9.1 |
 | sky130 PDK (open_pdks) | `1e3554706ddbb2529193bdabbc7128296f3cb44a` (2026-10-01) | 2026-10-16 | `Dockerfile` `OPEN_PDKS_VERSION`, SHA256s in `docker/install-pdk.sh` | ciel release `sky130-<hash>`: `common`, `sky130_fd_sc_hd`, `sky130_fd_pr`. sky130A only; ccsnoise libs removed. 325 MB at `/opt/pdk/sky130A` |
+| matplotlib | `3.10.9` | 2026-10-16 | `Dockerfile` `MATPLOTLIB_VERSION` | Newest release with Python 3.10 wheels; for `scripts/orfs_metrics.py`. numpy 2.2.6 / pandas 2.3.3 come from ORFS |
 | ngspice | Ubuntu 22.04 package (36) | — | `Dockerfile` apt | Not in OSS CAD Suite |
 | XFCE | Ubuntu 22.04 packages | — | `Dockerfile` apt | |
 
