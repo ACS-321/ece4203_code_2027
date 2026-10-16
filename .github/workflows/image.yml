@@ -1,0 +1,115 @@
+# Build the ECE4203 image (Dockerfile + devcontainer features), smoke-test it
+# inside the container, and push it to GHCR.
+#
+#   pull_request that touches the image   -> build + smoke test, no push
+#   push a tag v*                         -> build + smoke test, then push
+#       v2027.0.0-dev3  -> :v2027.0.0-dev3 and :2027-dev
+#       v2027.1.0       -> :v2027.1.0      and :2027
+#   workflow_dispatch (Actions tab; once this file is on main) -> like a -dev tag
+#
+# Never touches dvanblerkom/ece4203:2026 on Docker Hub.
+name: image
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - docker/**
+      - .devcontainer/**
+      - scripts/desktop.sh
+      - lab1/**
+      - openroad_flow/**
+      - .github/workflows/image.yml
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push :2027-dev and :sha-<commit> after the smoke test
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/dvanblerkom/ece4203
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      # The ORFS base image is ~6 GB unpacked and the final image ~9 GB. The runner's
+      # root disk starts with ~20 GB free, so remove preinstalled SDKs we don't use
+      # and move Docker's storage to the larger /mnt disk when it has room.
+      - name: Free disk space
+        run: |
+          df -h / /mnt || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+                      /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/CodeQL \
+                      /usr/local/share/powershell /usr/local/share/chromium /usr/local/lib/node_modules
+          sudo docker image prune --all --force > /dev/null
+          if [ "$(df --output=avail -BG /mnt 2>/dev/null | tail -1 | tr -dc 0-9)" -gt 40 ] 2>/dev/null; then
+            sudo systemctl stop docker docker.socket
+            cfg=/etc/docker/daemon.json
+            [ -s "$cfg" ] || echo '{}' | sudo tee "$cfg" > /dev/null
+            sudo jq '. + {"data-root": "/mnt/docker"}' "$cfg" | sudo tee "$cfg.new" > /dev/null
+            sudo mv "$cfg.new" "$cfg"
+            sudo systemctl start docker
+            echo "Docker data-root moved to /mnt/docker"
+          fi
+          docker info --format 'Docker root: {{.DockerRootDir}}'
+          df -h / /mnt || true
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Decide image tags and whether to push
+        id: tags
+        run: |
+          sha_tag="sha-${GITHUB_SHA::12}"
+          push=never
+          tags="ci-${sha_tag}"
+          if [ "${GITHUB_EVENT_NAME}" = push ] && [ "${GITHUB_REF_TYPE}" = tag ]; then
+            push=always
+            case "${GITHUB_REF_NAME}" in
+              *-dev*) tags="${GITHUB_REF_NAME},2027-dev" ;;
+              *)      tags="${GITHUB_REF_NAME},2027" ;;
+            esac
+          elif [ "${GITHUB_EVENT_NAME}" = workflow_dispatch ] && [ "${{ inputs.push }}" = true ]; then
+            push=always
+            tags="2027-dev,${sha_tag}"
+          fi
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+          echo "push=${push}" >> "$GITHUB_OUTPUT"
+          echo "Image tags: ${tags} (push: ${push})"
+
+      - name: Log in to GHCR
+        if: steps.tags.outputs.push == 'always'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Builds Dockerfile + features from .devcontainer/build/devcontainer.json,
+      # starts the container, runs the smoke test inside it, and pushes only if
+      # that passes.
+      - name: Build, smoke-test and (maybe) push
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3.1900000450
+        with:
+          configFile: .devcontainer/build/devcontainer.json
+          imageName: ${{ env.IMAGE }}
+          imageTag: ${{ steps.tags.outputs.tags }}
+          cacheFrom: ${{ env.IMAGE }}:2027-dev
+          push: ${{ steps.tags.outputs.push }}
+          runCmd: SMOKE_OUT=/tmp/smoke bash docker/smoke-test.sh
+
+      - name: Image size
+        if: always()
+        run: docker images "${IMAGE}" --format '{{.Repository}}:{{.Tag}}  {{.Size}}'; df -h / /mnt || true

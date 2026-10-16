@@ -22,21 +22,25 @@ SHELL := /bin/bash
 # ---------------------------------------------------------------
 YOSYS    := yosys
 STA      := sta        # OpenSTA, shipped with ORFS as 'sta'
-IVERILOG := source /opt/oss-cad-suite/environment && iverilog
-VVP      := source /opt/oss-cad-suite/environment && vvp
+IVERILOG := iverilog   # OSS CAD Suite (on PATH in the image)
+VVP      := vvp
 PYTHON   := python3
 
 # ---------------------------------------------------------------
 # sky130hd paths
 # ---------------------------------------------------------------
-# Liberty file — typical corner, 25 °C, 1.8 V
-#LIBERTY := /OpenROAD-flow-scripts/flow/platforms/sky130hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
-LIBERTY := ../pdk/sky130_fd_sc_hd/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+# The sky130 PDK is installed in the image (ciel/open_pdks) at $(PDK_ROOT).
+PDK_ROOT ?= /opt/pdk
+PDK      ?= sky130A
+SKY130_HD := $(PDK_ROOT)/$(PDK)/libs.ref/sky130_fd_sc_hd
+# Liberty file — typical corner, 25 °C, 1.8 V (other corners are in the same dir)
+LIBERTY := $(SKY130_HD)/lib/sky130_fd_sc_hd__tt_025C_1v80.lib
 # sky130 gate-level Verilog models (needed for gate-level simulation).
-# These ship with the PDK inside OSS CAD Suite.
-# Adjust if your container mounts the PDK elsewhere.
-#SKY130_CELLS := /workspaces/ece4203_code/pdk/sky130_fd_sc_hd/verilog
-SKY130_CELLS := ../pdk/sky130_fd_sc_hd/verilog
+SKY130_CELLS := $(SKY130_HD)/verilog
+# iverilog rejects the specify block in one cell model (SHORT => VPWR), so the
+# simulation uses a copy with that block commented out (the PDK is not modified).
+CELLS_V := results/sky130_fd_sc_hd_iverilog.v
+PRIMS_V := $(SKY130_CELLS)/primitives.v
 # ---------------------------------------------------------------
 # Sweep parameters
 # ---------------------------------------------------------------
@@ -171,14 +175,18 @@ PERIOD ?= 4
 # Declare it so downstream targets can depend on it directly.
 results/netlist_%_$(PERIOD).sdf: results/sta_w%p$(PERIOD).log ;
 
+$(CELLS_V): $(SKY130_CELLS)/sky130_fd_sc_hd.v | results/
+	perl -0pe 's{^specify\n(\(SHORT => VPWR\)[^\n]*)\nendspecify}{//specify\n//$$1\n//endspecify}m' $< > $@
+	@grep -q '^//(SHORT => VPWR)' $@ || { echo "patch for $(notdir $<) did not apply"; exit 1; }
+
 results/netlist_$(WIDTH)_$(PERIOD)_timed.v: \
-        results/netlist_$(WIDTH)_$(PERIOD).v \
+        results/netlist_$(WIDTH)_$(PERIOD).v $(CELLS_V) \
         results/sta_w$(WIDTH)p$(PERIOD).log | results/
 	@echo "=== Injecting SDF delays WIDTH=$(WIDTH) PERIOD=$(PERIOD)ns ==="
 	$(PYTHON) scripts/sdf_inject.py \
 	    --sdf      results/netlist_$(WIDTH)_$(PERIOD).sdf \
 	    --netlist  results/netlist_$(WIDTH)_$(PERIOD).v \
-	    --cells    $(SKY130_CELLS)/sky130_fd_sc_hd.v \
+	    --cells    $(CELLS_V) \
 	    --out      results/netlist_$(WIDTH)_$(PERIOD)_timed.v \
 	    --wrappers results/netlist_$(WIDTH)_$(PERIOD)_wrappers.v
 
@@ -194,8 +202,8 @@ sim_timed: results/netlist_$(WIDTH)_$(PERIOD)_timed.v
 			sim/tb_gl.v \
 			results/netlist_$(WIDTH)_$(PERIOD)_wrappers.v \
 			results/netlist_$(WIDTH)_$(PERIOD)_timed.v \
-	    		$(SKY130_CELLS)/primitives.v \
-	    		$(SKY130_CELLS)/sky130_fd_sc_hd.v 
+	    		$(PRIMS_V) \
+	    		$(CELLS_V)
 		$(VVP) results/sim_timed_$(WIDTH)_$(PERIOD)_exe | tee results/sim_timed_$(WIDTH)_$(PERIOD).log
 		@echo ""
 		@echo "Waveform: results/timed_$(WIDTH)_$(PERIOD).vcd"
