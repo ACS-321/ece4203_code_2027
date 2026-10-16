@@ -48,6 +48,10 @@ module registered_adder #(
     // -------------------------------------------------------
     reg  [WIDTH-1:0] a_r, b_r;
     reg              cin_r;
+    // WIDTH+1 bits: sum plus carry-out. (This used to be the `result` output
+    // port; when that port was commented out, `result` silently became an
+    // implicit 1-bit wire and synthesis removed almost the whole adder.)
+    wire [WIDTH:0]   result;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
