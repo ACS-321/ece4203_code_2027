@@ -1,19 +1,63 @@
 {
-    "name": "Cal Poly ECE4203 2026",
+    "name": "Cal Poly ECE4203 2027 (dev)",
+    // Phase 1 still uses the existing 2026 image, which is only pulled, never modified.
+    // The desktop now comes from the desktop-lite feature, layered on top at
+    // Codespace creation. Phase 2 moves to the new GHCR image.
     "image": "dvanblerkom/ece4203:2026",
     "hostRequirements": {
         "cpus": 4,
         "memory": "8gb",
         "storage": "32gb"
     },
-    "forwardPorts": [6080],
+    "features": {
+        // Passwordless sudo for "user". desktop-init.sh needs sudo to start dbus
+        // and noVNC, and the 2026 image's sudo asks for a password.
+        "ghcr.io/devcontainers/features/common-utils:2.7.1": {
+            "username": "user",
+            "installZsh": false,
+            "installOhMyZsh": false,
+            "installOhMyZshConfig": false,
+            "upgradePackages": false
+        },
+        // TigerVNC + noVNC desktop, started by the container entrypoint
+        // (not by a lifecycle command), and restarted automatically if it dies.
+        "ghcr.io/devcontainers/features/desktop-lite:1.2.10": {
+            "password": "ece4203",
+            "noVncVersion": "1.6.0",
+            "webPort": "6080",
+            "vncPort": "5901"
+        },
+        // SSH server so "gh codespace ssh" works (fallback: X11 forwarding).
+        "ghcr.io/devcontainers/features/sshd:1.1.0": {}
+    },
+    "overrideFeatureInstallOrder": [
+        "ghcr.io/devcontainers/features/common-utils",
+        "ghcr.io/devcontainers/features/desktop-lite",
+        "ghcr.io/devcontainers/features/sshd"
+    ],
+    "containerEnv": {
+        // desktop-lite 1.2.10 decides at runtime whether to ask for a password by
+        // checking this variable. The "password" option above only writes the
+        // password file, so without this the desktop has no password.
+        "VNC_PASSWORD": "ece4203",
+        // Initial size only; noVNC "Remote Resizing" follows the browser window.
+        "VNC_RESOLUTION": "1600x900x24",
+        "VNC_DPI": "96"
+    },
+    "forwardPorts": [6080, 5901],
     "portsAttributes": {
         "6080": {
-            "label": "Desktop",
-            "onAutoForward": "openBrowser"
+            "label": "Desktop (noVNC)",
+            "onAutoForward": "openBrowserOnce"
+        },
+        "5901": {
+            "label": "VNC (native client)",
+            "onAutoForward": "silent"
         }
     },
-    "postStartCommand": "bash /workspaces/ece4203_code/scripts/start-vnc.sh",
+    // Idempotent: checks that the desktop is up (repairing it if needed) and
+    // logs to ~/.cache/ece4203-desktop/desktop.log.
+    "postStartCommand": "bash \"${containerWorkspaceFolder}/scripts/desktop.sh\" ensure",
     "remoteUser": "user",
     "customizations": {
         "vscode": {
