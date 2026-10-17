@@ -47,7 +47,7 @@ Measured by `.github/workflows/ladder.yml` on GitHub's 4-vCPU / 16 GB runners, w
 
 | Design | sky130hd | asap7 |
 |---|---|---|
-| registered_adder | *re-measuring (RTL fix)* | *re-measuring* |
+| registered_adder | 2.3 min | 1.4 min |
 | gcd | 1.6 min | 0.9 min |
 | riscvsingle | 20 min | 6.8 min |
 | aes | 37 min | 12 min |
@@ -59,12 +59,16 @@ sky130hd takes about 3× longer than asap7 for the same RTL, mostly in detailed 
 
 | Design | Platform | Cells | Cell area (µm²) | Utilization | Clock (ns) | Worst slack (ns) | Fmax (MHz) | Power (mW) | Wirelength (µm) |
 |---|---|---|---|---|---|---|---|---|---|
+| registered_adder | sky130hd | 1,807 | 15,630 | 0.44 | 2.0 | −1.59 | 278 | 11.9 | 36,150 |
+| registered_adder | asap7 | 1,667 | 182 | 0.14 | 0.40 | +0.015 | 2,595 | 2.03 | 4,047 |
 | gcd | sky130hd | 548 | 5,413 | 0.92 | 1.1 | −1.46 | 391 | 9.85 | 11,730 |
 | gcd | asap7 | 427 | 45 | 0.74 | 0.31 | −0.041 | 3,038 | 1.37 | 772 |
 | riscvsingle | sky130hd | 5,146 | 61,420 | 0.54 | 10 | +0.27 | 149 | 10.9 | 184,700 |
 | riscvsingle | asap7 | 8,083 | 946 | 0.56 | 1.0 | +0.023 | 1,469 | 5.70 | 30,870 |
 | aes | sky130hd | 18,439 | 130,500 | 0.59 | 3.6 | −0.054 | 274 | 570 | 574,200 |
 | aes | asap7 | 12,826 | 1,452 | 0.74 | 0.38 | −0.011 | 2,559 | 83.4 | 49,880 |
+
+registered_adder (64-bit) misses its 2.0 ns target on sky130hd by 1.6 ns. A 64-bit carry chain doesn't fit there, which matches the Lab 1 sweep. On asap7 the same RTL makes 400 ps. Comparing the two critical paths in `gui_final` is a good exercise.
 
 The gcd and aes clock targets come from ORFS's own configs, which are set near each platform's limit, so small negative slack is expected. gcd on sky130hd misses by more (−1.46 ns at 1.1 ns). That's a good discussion point: compare its reported Fmax with asap7's.
 
