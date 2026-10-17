@@ -6,13 +6,29 @@ with the same wrapper as the other designs. Open the result with
 
 | Example | Command | Runtime (4 vCPU) |
 |---|---|---|
-| SRAM macros, automatic placement | `make DESIGN=riscv32i PLATFORM=asap7` | *TBD* |
-| SRAM macros, hand placement | `make DESIGN=riscv32i_macros PLATFORM=asap7` | *TBD* |
-| Hardened block (register file) | `make DESIGN=riscvsingle_hier PLATFORM=asap7` | *TBD* |
-| Flat version, for comparison | `make DESIGN=riscvsingle PLATFORM=asap7` | *TBD* |
-| Pad ring | `make DESIGN=padring_counter PLATFORM=ihp-sg13g2` | *TBD* |
+| SRAM macros, automatic placement | `make DESIGN=riscv32i PLATFORM=asap7` | 15 min |
+| SRAM macros, hand placement | `make DESIGN=riscv32i_macros PLATFORM=asap7` | 30 min |
+| Hardened block (register file) | `make DESIGN=riscvsingle_hier PLATFORM=asap7` | 5 min (block 3.4 + top 1.5) |
+| Flat version, for comparison | `make DESIGN=riscvsingle PLATFORM=asap7` | 4–7 min |
+| Pad ring | `make DESIGN=padring_counter PLATFORM=ihp-sg13g2` | 20 s |
 
-Runtimes are measured by `.github/workflows/macros-pads.yml` (Actions → macros-pads).
+Runtimes are ORFS stage time on GitHub's 4-vCPU runners, measured by `.github/workflows/macros-pads.yml` (Actions → macros-pads).
+
+### Measured results (ORFS 26Q4, `:2027-dev` image)
+
+| Design | Cells | Cell area (µm²) | Die (µm²) | Utilization | Worst slack (ns) | Fmax (MHz) | Power (mW) | Wirelength (µm) |
+|---|---|---|---|---|---|---|---|---|
+| riscv32i (RTLMP) | 10,350 | 1,244 | 5,350 | 0.49 | −0.020 | 1,103 | 31.4 | 52,960 |
+| riscv32i_macros (hand) | 13,465 | 1,450 | 12,100 | 0.17 | −0.099 | 1,009 | 16.3 | 92,970 |
+| riscvsingle (flat) | 8,083 | 946 | 2,040 | 0.56 | +0.023 | 1,469 | 5.70 | 30,870 |
+| riscvsingle_hier (top) | 2,312 | 175 | 5,843 | 0.05 | −0.011 | 1,605 | 0.45 | 13,220 |
+| ↳ regfile block | 7,011 | 824 | 1,982 | 0.51 | +0.083 | 1,091 | 5.00 | 24,850 |
+| padring_counter (IHP) | 42 | 884 | 1,104,000 | 0.007 | +1.97 | 742 | 1.17 | 4,325 |
+
+What the numbers show:
+- **Hand placement lost to RTLMP here.** The fixed 110 × 110 µm die (`riscv32i_macros/config.mk`) is 2.3× larger than the one ORFS sizes automatically. The longer wires need more buffers (+30% cells) and cost timing. Shrinking `DIE_AREA`/`CORE_AREA` and moving the macros in `macros.tcl` is a good exercise.
+- **Hardening the register file** keeps total cell area about the same (175 + 824 µm² vs 946 µm² flat), but the top level misses timing slightly (−11 ps vs +23 ps flat). The block's fixed 30%/30% I/O budget and its fixed pins limit what the top level can optimize. The top's utilization is low because the macro's area isn't counted as standard cells.
+- **The pad ring** is 42 cells in a 1.05 mm² die (0.7% utilization). It's entirely pad limited.
 
 ---
 
