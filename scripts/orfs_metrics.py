@@ -67,7 +67,8 @@ STAGES = ["1_synth", "2_floorplan", "3_place", "4_cts", "5_route", "6_finish"]
 def num(v):
     try:
         f = float(v)
-        return f if math.isfinite(f) else None
+        # OpenSTA reports +/-1e39 for "no constrained paths"; treat as missing.
+        return f if math.isfinite(f) and abs(f) < 1e30 else None
     except (TypeError, ValueError):
         return None
 
