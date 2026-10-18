@@ -2,6 +2,7 @@
 # published image, and collect metrics (CSV + plots) and runtimes.
 # Each design x platform is its own job on a 4-vCPU runner, so the reported
 # runtimes are what a 4-core Codespace should see (the default Codespace is 2-core).
+# Manual only: Actions tab -> ladder -> Run workflow.
 name: ladder
 
 on:
@@ -14,11 +15,6 @@ on:
         description: Also run ibex (~30-60 min per platform)
         type: boolean
         default: false
-  pull_request:
-    paths:
-      - openroad_flow/**
-      - scripts/orfs_metrics.py
-      - .github/workflows/ladder.yml
 
 permissions:
   contents: read

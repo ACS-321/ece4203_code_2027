@@ -4,25 +4,18 @@
 # Steps: devcontainer CLI build -> start container -> docker/smoke-test.sh inside
 # it -> upload logs -> push (only after the smoke test passed).
 #
-#   pull_request that touches the image   -> build + smoke test, no push
+# Runs only when you ask (no pull_request trigger, to save Actions minutes):
 #   push a tag v*                         -> build + smoke test, then push
 #       v2027.0.0-dev3  -> :v2027.0.0-dev3 and :2027-dev
 #       v2027.1.0       -> :v2027.1.0      and :2027
-#   workflow_dispatch (Actions tab; once this file is on main) -> like a -dev tag
+#   workflow_dispatch (Actions tab -> image -> Run workflow, pick a branch)
+#                                         -> build + smoke test; tick "push" to publish
+#                                            :2027-dev and :sha-<commit>
 #
 # Never touches dvanblerkom/ece4203:2026 on Docker Hub.
 name: image
 
 on:
-  pull_request:
-    paths:
-      - Dockerfile
-      - docker/**
-      - .devcontainer/**
-      - scripts/desktop.sh
-      - lab1/**
-      - openroad_flow/**
-      - .github/workflows/image.yml
   push:
     tags: ['v*']
   workflow_dispatch:
