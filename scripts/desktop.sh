@@ -156,8 +156,32 @@ start_desktop() {
     fi
 }
 
+# Terminals opened inside the noVNC desktop start in $HOME. Make interactive shells that
+# start in $HOME begin in the repo checkout instead (/workspaces/<repo name> in Codespaces;
+# the name varies for forks, so the first non-hidden directory under /workspaces is used).
+# VS Code terminals already start in the repo, so they are unaffected. Rewritten on every
+# start, so changes to the block below reach existing Codespaces.
+install_shell_hook() {
+    local rc="${HOME}/.bashrc" begin='# >>> ece4203 workdir >>>' end='# <<< ece4203 workdir <<<'
+    [ -w "$rc" ] || [ ! -e "$rc" ] || return 0
+    touch "$rc"
+    sed -i "\|${begin}|,\|${end}|d" "$rc"
+    cat >> "$rc" <<'HOOK'
+# >>> ece4203 workdir >>>
+if [ "$PWD" = "$HOME" ] && [ -z "${ECE4203_CD_DONE:-}" ]; then
+    export ECE4203_CD_DONE=1
+    for _d in /workspaces/*/; do
+        [ -d "$_d" ] && { cd "${_d%/}" || true; break; }
+    done
+    unset _d
+fi
+# <<< ece4203 workdir <<<
+HOOK
+}
+
 cmd_ensure() {
     local changed=1
+    install_shell_hook
     write_xstartup && changed=0
     # On container start the entrypoint may still be starting the desktop.
     if wait_healthy 20; then
