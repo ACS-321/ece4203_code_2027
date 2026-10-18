@@ -43,6 +43,8 @@ and in the file listed under "Where".
 
 | Tag | Meaning |
 |---|---|
-| `ghcr.io/dvanblerkom/ece4203:2027-dev` | Latest `v*-dev*` tag build; what `.devcontainer/devcontainer.json` uses during development |
-| `ghcr.io/dvanblerkom/ece4203:2027` | Latest release tag (`v2027.x.y`) |
+| `ghcr.io/dvanblerkom/ece4203:v2027.1.0` | **Fall 2027 release** (`sha256:489b7886f9f2f5f6cbb4982e9423437b82bf4ea446d7a5489aebf143b65afc35`); what `.devcontainer/devcontainer.json` uses |
+| `ghcr.io/dvanblerkom/ece4203:2027` | Moves to the latest release tag (`v2027.x.y`); currently the same image as `v2027.1.0` |
+| `ghcr.io/dvanblerkom/ece4203:2027-dev` | Latest `v*-dev*` tag build, for testing; used by the `ladder`, `macros-pads` and `lab1` CI workflows |
+| `ghcr.io/dvanblerkom/ece4203:v2027.0.0-dev1` | First dev build (superseded) |
 | `ghcr.io/dvanblerkom/ece4203:<git tag>` | Immutable per-release tag |

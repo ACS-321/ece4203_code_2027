@@ -1,9 +1,10 @@
 {
-    "name": "Cal Poly ECE4203 2027 (dev)",
+    "name": "Cal Poly ECE4203 2027",
     // Built from ../Dockerfile + build/devcontainer.json by .github/workflows/image.yml.
     // The desktop (desktop-lite), sshd, VNC password and remoteUser are baked into
-    // the image metadata. Pin to a release tag or digest for a term.
-    "image": "ghcr.io/dvanblerkom/ece4203:2027-dev",
+    // the image metadata. Pinned to an exact release so the environment does not change
+    // mid-term; to ship a fix, tag v2027.1.1 and bump this line (see docs/image.md).
+    "image": "ghcr.io/dvanblerkom/ece4203:v2027.1.0",
     "hostRequirements": {
         "cpus": 4,
         "memory": "8gb",
