@@ -6,7 +6,7 @@
     // mid-term; to ship a fix, tag v2027.1.1 and bump this line (see docs/image.md).
     "image": "ghcr.io/dvanblerkom/ece4203:v2027.1.0",
     "hostRequirements": {
-        "cpus": 4,
+        "cpus": 2,
         "memory": "8gb",
         "storage": "32gb"
     },
