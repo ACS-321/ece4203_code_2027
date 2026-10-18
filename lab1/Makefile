@@ -6,7 +6,15 @@
 #   make sta              Static timing analysis + SDF generation (OpenSTA)
 #   make sim_gl WIDTH=N   Gate-level simulation with SDF back-annotation
 #   make summary          Print area and WNS tables
+#   make csv              All sweep results -> results/summary.csv (Assignment 1)
+#   make plot             Starter plots from results/summary.csv (Assignment 1)
+#   make compare WIDTH=N PERIOD=P
+#                         RTL and SDF-timed gate-level netlist side by side,
+#                         same stimulus -> results/compare_N_P.vcd (Assignment 2)
 #   make clean            Remove all generated files
+#
+# Sweep other sizes/speeds by overriding the lists, e.g.
+#   make csv WIDTHS="4 8 16 24 32 48 64" PERIODS="2 4 8 16"
 #
 # Typical workflow:
 #   make sim              ← confirm RTL is correct first
@@ -155,6 +163,19 @@ $(foreach W,$(WIDTHS),$(foreach P,$(PERIODS),$(eval $(call STA_RULE,$(W),$(P))))
 WIDTH ?= 8
 PERIOD ?= 4
 
+# Rules for a single WIDTH/PERIOD pair that is not in the sweep lists, so that
+# e.g. `make compare WIDTH=12 PERIOD=3` works without editing WIDTHS/PERIODS.
+ifeq ($(filter $(WIDTH),$(WIDTHS)),)
+EXTRA_PAIR := yes
+endif
+ifeq ($(filter $(PERIOD),$(PERIODS)),)
+EXTRA_PAIR := yes
+endif
+ifdef EXTRA_PAIR
+$(eval $(call SYNTH_RULE,$(WIDTH),$(PERIOD)))
+$(eval $(call STA_RULE,$(WIDTH),$(PERIOD)))
+endif
+
 #.PHONY: sim_gl
 #sim_gl: results/netlist_$(WIDTH).v results/netlist_$(WIDTH).sdf
 #	@echo "=== Gate-Level Simulation WIDTH=$(WIDTH) with SDF ==="
@@ -230,8 +251,8 @@ summary:
 	@printf "  %-6s  %-7s  %-8s  %-12s\n" "-----" "------" "-----" "----------"
 	@for w in $(WIDTHS); do \
 	    for p in $(PERIODS); do \
-	        cells=$$(grep "Number of cells" results/yosys_$${w}_$${p}.log 2>/dev/null \
-	                 | awk '{print $$NF}' | tail -1); \
+	        cells=$$(grep -E '^ +[0-9]+ +[0-9.E+-]+ +cells$$' results/yosys_$${w}_$${p}.log 2>/dev/null \
+	                 | awk '{print $$1}' | tail -1); \
 	        area=$$(grep "Chip area" results/yosys_$${w}_$${p}.log 2>/dev/null \
 	                | awk '{print $$NF}' | tail -1); \
 	        printf "  %-6s  %-7s  %-8s  %-12s\n" \
@@ -295,6 +316,51 @@ summary:
 	    done; \
 	done
 	@echo ""
+
+# ---------------------------------------------------------------
+# 6. Assignment 1: sweep results as CSV, starter plots
+# ---------------------------------------------------------------
+.PHONY: csv plot
+csv: synth sta
+	$(PYTHON) scripts/collect_results.py --results results --out results/summary.csv
+
+plot: results/summary.csv
+	$(PYTHON) scripts/plot_starter.py results/summary.csv
+
+results/summary.csv:
+	$(MAKE) csv
+
+# ---------------------------------------------------------------
+# 7. Assignment 2: RTL vs SDF-timed gate-level, same stimulus, one VCD
+#
+#   make compare WIDTH=8 PERIOD=4
+#   gtkwave results/compare_8_4.vcd sim/compare.gtkw
+#
+# The RTL copy is renamed registered_adder_rtl so both versions can be
+# instantiated in the same testbench (sim/tb_compare.v).
+# ---------------------------------------------------------------
+results/registered_adder_rtl.v: rtl/registered_adder.v | results/
+	sed 's/^module registered_adder\b/module registered_adder_rtl/' $< > $@
+
+.PHONY: compare
+compare: results/netlist_$(WIDTH)_$(PERIOD)_timed.v results/registered_adder_rtl.v
+	@echo "=== RTL vs gate-level WIDTH=$(WIDTH) PERIOD=$(PERIOD)ns ==="
+	$(IVERILOG) -g2012 -g specify \
+	    -D WIDTH=$(WIDTH) \
+	    -D PERIOD=$(PERIOD) \
+	    -D VCD_FILE=\"results/compare_$(WIDTH)_$(PERIOD).vcd\" \
+	    -D FUNCTIONAL \
+	    -o results/compare_$(WIDTH)_$(PERIOD)_exe \
+	    sim/tb_compare.v \
+	    results/registered_adder_rtl.v \
+	    results/netlist_$(WIDTH)_$(PERIOD)_wrappers.v \
+	    results/netlist_$(WIDTH)_$(PERIOD)_timed.v \
+	    $(PRIMS_V) \
+	    $(CELLS_V)
+	$(VVP) results/compare_$(WIDTH)_$(PERIOD)_exe | tee results/compare_$(WIDTH)_$(PERIOD).log
+	@echo ""
+	@echo "Waveform: gtkwave results/compare_$(WIDTH)_$(PERIOD).vcd sim/compare.gtkw &"
+	@echo "Critical path (STA): results/sta_w$(WIDTH)p$(PERIOD).log"
 
 # ---------------------------------------------------------------
 # Housekeeping

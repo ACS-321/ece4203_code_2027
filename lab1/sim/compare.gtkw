@@ -1,0 +1,26 @@
+[*] ECE4203 Lab 1, Assignment 2: RTL vs gate-level
+[*] gtkwave results/compare_<W>_<P>.vcd sim/compare.gtkw
+[*] Tip: right-click result_gl -> Expand to see each bit settle separately.
+[timestart] 0
+@28
+tb_compare.clk
+tb_compare.rst_n
+@22
+tb_compare.a[7:0]
+tb_compare.b[7:0]
+@28
+tb_compare.cin
+@200
+-RTL (zero delay)
+@22
+tb_compare.result_rtl[8:0]
+tb_compare.sum_rtl[7:0]
+@28
+tb_compare.cout_rtl
+@200
+-Gate level (SDF delays)
+@22
+tb_compare.result_gl[8:0]
+tb_compare.sum_gl[7:0]
+@28
+tb_compare.cout_gl
