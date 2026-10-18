@@ -1,0 +1,126 @@
+# Runs the Lab 1 assignment steps in the published image and reports the results
+# as annotations: the sweep CSV (Assignment 1) and RTL-vs-gate-level comparisons,
+# with settling times measured from the VCD next to STA's arrival time (Assignment 2).
+name: lab1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - lab1/**
+      - .github/workflows/lab1.yml
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  lab1:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/dvanblerkom/ece4203:2027-dev
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: lab1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Assignment 1 sweep -> CSV
+        run: |
+          make -j4 csv WIDTHS="4 8 16 24 32 48 64" PERIODS="1 2 4 8 16"
+          make summary WIDTHS="4 8 16 24 32 48 64" PERIODS="1 2 4 8 16" | tee results/summary.txt
+          msg="$(cat results/summary.csv)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\r'/}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::notice title=summary.csv::${msg:0:4000}"
+          msg="$(sed -n '1,30p' results/summary.txt)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::notice title=make summary::${msg:0:4000}"
+
+      - name: Assignment 2 compare runs
+        run: |
+          for wp in 8:4 8:1 16:2 32:4 32:2; do
+            w="${wp%%:*}" p="${wp##*:}"
+            make compare WIDTH="$w" PERIOD="$p" > "results/compare_run_${w}_${p}.txt" 2>&1 || true
+          done
+          # Same 8-bit netlist (built for 4 ns) clocked faster and faster.
+          for s in 2 1.5 1.2 1.0 0.8 0.6; do
+            make compare WIDTH=8 PERIOD=4 SIM_PERIOD="$s" > "results/compare_run_8_4_sim${s}.txt" 2>&1 || true
+          done
+          python3 - <<'EOF'
+          import glob, re, os
+          def vcd_changes(path, names):
+              ids, changes, t, scope = {}, {}, 0, []
+              with open(path) as f:
+                  for line in f:
+                      if line.startswith('$scope'):
+                          scope.append(line.split()[2])
+                      elif line.startswith('$upscope'):
+                          scope.pop()
+                      elif line.startswith('$var'):
+                          p = line.split()
+                          full = '.'.join(scope + [p[4]])
+                          if full in names:
+                              ids[p[3]] = full
+                              changes[full] = []
+                      elif line.startswith('#'):
+                          t = int(line[1:])
+                      elif ids and line[:1] in 'b':
+                          v, code = line[1:].split()
+                          if code in ids:
+                              changes[ids[code]].append((t, v))
+                      elif ids and line[:1] in '01xz' and line[1:].strip() in ids:
+                          changes[ids[line[1:].strip()]].append((t, line[0]))
+              return changes
+          rows = []
+          for log in sorted(glob.glob('results/compare_*_*.log')):
+              m = re.match(r'results/compare_(\d+)_([^_]+)(?:_sim(.+))?\.log', log)
+              w, p, sp = m.group(1), m.group(2), m.group(3) or m.group(2)
+              tag = os.path.basename(log)[len('compare_'):-len('.log')]
+              vcd = f'results/compare_{tag}.vcd'
+              sta = open(f'results/sta_w{w}p{p}.log').read() if os.path.exists(f'results/sta_w{w}p{p}.log') else ''
+              arr = re.search(r'^\s*(-?[\d.]+)\s+data arrival time', sta, re.M)
+              ws = re.search(r'^worst slack(?: max)?\s+(-?[\d.eE+-]+)', sta, re.M)
+              verdict = open(log).read().strip().splitlines()[-2:] if open(log).read().strip() else ['(no output)']
+              ch = vcd_changes(vcd, {'tb_compare.clk', 'tb_compare.result_gl'}) if os.path.exists(vcd) else {}
+              edges = [t for t, v in ch.get('tb_compare.clk', []) if v == '1']
+              res = ch.get('tb_compare.result_gl', [])
+              per = float(sp) * 1000  # ps (timescale 1ns/1ps)
+              settle, glitchy = [], 0
+              for e in edges[5:]:
+                  win = [t for t, v in res if e < t < e + per]
+                  if win:
+                      settle.append((win[-1] - e) / 1000.0)
+                      glitchy += len(win) > 1
+              rows.append(f"W={w} P={p} sim={sp}: STA arrival={arr.group(1) if arr else '?'} ns, slack={ws.group(1) if ws else '?'} ns | "
+                          f"sim settle max={max(settle) if settle else float('nan'):.3f} ns over {len(settle)} cycles, "
+                          f"{glitchy} cycles with >1 result change | {' '.join(verdict)}")
+          msg = '%0A'.join(rows)
+          print('\n'.join(rows))
+          print(f'::notice title=compare runs::{msg[:4000]}')
+          EOF
+          tail -n 25 results/compare_run_8_4.txt
+          grep -n -A40 "Startpoint" results/sta_w8p4.log | head -60
+
+      - name: Annotate failure
+        if: failure()
+        run: |
+          # shellcheck disable=SC2012  # simple file names
+          f=$(ls -t results/*.log results/*.txt 2>/dev/null | head -n 1 || true)
+          msg="$( { echo "last file: ${f:-none}"; [ -n "$f" ] && tail -n 30 "$f"; } | cut -c1-200)"
+          msg="${msg//'%'/'%25'}"; msg="${msg//$'\n'/'%0A'}"
+          echo "::error title=lab1 failed::${msg:0:3500}"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: lab1-results
+          path: |
+            lab1/results/*.csv
+            lab1/results/*.log
+            lab1/results/*.txt
+          retention-days: 14
