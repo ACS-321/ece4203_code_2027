@@ -34,8 +34,6 @@ jobs:
         run: |
           make -j4 csv WIDTHS="4 8 16 24 32 48 64" PERIODS="1 2 4 8 16"
           make summary WIDTHS="4 8 16 24 32 48 64" PERIODS="1 2 4 8 16" | tee results/summary.txt
-          make plot
-          ls -la results/*.png
           msg="$(cat results/summary.csv)"
           msg="${msg//'%'/'%25'}"; msg="${msg//$'\r'/}"; msg="${msg//$'\n'/'%0A'}"
           echo "::notice title=summary.csv::${msg:0:4000}"
@@ -123,7 +121,6 @@ jobs:
           name: lab1-results
           path: |
             lab1/results/*.csv
-            lab1/results/*.png
             lab1/results/*.log
             lab1/results/*.txt
           retention-days: 14

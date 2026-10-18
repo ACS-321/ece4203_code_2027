@@ -7,7 +7,6 @@
 #   make sim_gl WIDTH=N   Gate-level simulation with SDF back-annotation
 #   make summary          Print area and WNS tables
 #   make csv              All sweep results -> results/summary.csv (Assignment 1)
-#   make plot             Starter plots from results/summary.csv (Assignment 1)
 #   make compare WIDTH=N PERIOD=P [SIM_PERIOD=S]
 #                         RTL and SDF-timed gate-level netlist side by side,
 #                         same stimulus -> results/compare_N_P.vcd (Assignment 2).
@@ -319,17 +318,11 @@ summary:
 	@echo ""
 
 # ---------------------------------------------------------------
-# 6. Assignment 1: sweep results as CSV, starter plots
+# 6. Assignment 1: sweep results as CSV (plot and fit it yourself)
 # ---------------------------------------------------------------
-.PHONY: csv plot
+.PHONY: csv
 csv: synth sta
 	$(PYTHON) scripts/collect_results.py --results results --out results/summary.csv
-
-plot: results/summary.csv
-	$(PYTHON) scripts/plot_starter.py results/summary.csv
-
-results/summary.csv:
-	$(MAKE) csv
 
 # ---------------------------------------------------------------
 # 7. Assignment 2: RTL vs SDF-timed gate-level, same stimulus, one VCD

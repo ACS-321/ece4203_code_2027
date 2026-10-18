@@ -40,14 +40,14 @@ In your Codespace, from the repo:
 cd lab1
 make clean
 make csv WIDTHS="4 8 16 24 32 48 64" PERIODS="1 2 4 8 16"
-make plot
 ```
 
 - `make csv` synthesizes and times all 35 design points (a few minutes) and writes **`results/summary.csv`**, one row per (width, period). The columns are described at the top of `scripts/collect_results.py`.
-- `make plot` runs **`scripts/plot_starter.py`**, which plots the raw points into `results/area_vs_width.png`, `power_vs_width.png` and `power_vs_freq.png`. You'll add the fits; look for the `TODO` comments.
 - `make summary` prints the same results as tables.
 
-You may use Python (starter provided), a spreadsheet, or MATLAB for the fits. Show your fitting code or formulas in the report.
+**Making the plots is part of the assignment.** Download `results/summary.csv` (right-click it in the VS Code file explorer → Download) and plot it with Excel or Google Sheets, or ask an AI assistant to write a plotting script for you. Either is fine, but:
+- **Excel/Sheets:** use a scatter chart and a linear trendline with "display equation and R²". Or use `=SLOPE()`, `=INTERCEPT()` and `=RSQ()` over the range you choose.
+- **AI:** include the prompt you used and the code it produced in the appendix. Check at least one slope by hand from two data points. You're responsible for the fit being right and for the range it's fitted over.
 
 ## Part A: Area per bit at a relaxed clock (T = 16 ns)
 
@@ -88,16 +88,16 @@ area to go faster. The `arrival_ns` column is the delay of each circuit's worst 
 ## What to hand in
 
 A PDF report, no more than 6 pages plus an appendix:
-- The three plots, **with your fitted lines**, axis labels and units.
+- Your plots, **with your fitted lines**, axis labels and units. At least: area vs W (Q2, Q5), arrival vs W (Q6), power vs W (Q8) and power vs f (Q9).
 - A table of every slope and intercept you fitted: value, units, the range of W or f you fitted over, and the fit quality.
 - Answers to questions 1–11. Each answer should point to a plot or a number.
-- Appendix: your fitting code or spreadsheet formulas, and `results/summary.csv`.
+- Appendix: your spreadsheet formulas or plotting code (with the AI prompt, if you used one), and `results/summary.csv`.
 
 ### Grading (100)
 
 | | Points |
 |---|---|
-| Sweep ran; CSV and raw plots correct | 10 |
+| Sweep ran; CSV correct | 10 |
 | Part A: prediction, fits, flip-flop analysis (Q1–4) | 25 |
 | Part B: area cost of speed, delay/bit, W = 32 speed/area table (Q5–7) | 30 |
 | Part C: power slopes, energy/bit, leakage, seq vs comb (Q8–11) | 25 |
