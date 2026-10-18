@@ -45,9 +45,13 @@ jobs:
 
       - name: Assignment 2 compare runs
         run: |
-          for wp in 8:4 8:1 8:0.8 16:2 32:4 32:2; do
+          for wp in 8:4 8:1 16:2 32:4 32:2; do
             w="${wp%%:*}" p="${wp##*:}"
             make compare WIDTH="$w" PERIOD="$p" > "results/compare_run_${w}_${p}.txt" 2>&1 || true
+          done
+          # Same 8-bit netlist (built for 4 ns) clocked faster and faster.
+          for s in 2 1.5 1.2 1.0 0.8 0.6; do
+            make compare WIDTH=8 PERIOD=4 SIM_PERIOD="$s" > "results/compare_run_8_4_sim${s}.txt" 2>&1 || true
           done
           python3 - <<'EOF'
           import glob, re, os
@@ -76,9 +80,10 @@ jobs:
               return changes
           rows = []
           for log in sorted(glob.glob('results/compare_*_*.log')):
-              m = re.match(r'results/compare_(\d+)_(.+)\.log', log)
-              w, p = m.group(1), m.group(2)
-              vcd = f'results/compare_{w}_{p}.vcd'
+              m = re.match(r'results/compare_(\d+)_([^_]+)(?:_sim(.+))?\.log', log)
+              w, p, sp = m.group(1), m.group(2), m.group(3) or m.group(2)
+              tag = os.path.basename(log)[len('compare_'):-len('.log')]
+              vcd = f'results/compare_{tag}.vcd'
               sta = open(f'results/sta_w{w}p{p}.log').read() if os.path.exists(f'results/sta_w{w}p{p}.log') else ''
               arr = re.search(r'^\s*(-?[\d.]+)\s+data arrival time', sta, re.M)
               ws = re.search(r'^worst slack(?: max)?\s+(-?[\d.eE+-]+)', sta, re.M)
@@ -86,14 +91,14 @@ jobs:
               ch = vcd_changes(vcd, {'tb_compare.clk', 'tb_compare.result_gl'}) if os.path.exists(vcd) else {}
               edges = [t for t, v in ch.get('tb_compare.clk', []) if v == '1']
               res = ch.get('tb_compare.result_gl', [])
-              per = float(p) * 1000  # ps (timescale 1ns/1ps)
+              per = float(sp) * 1000  # ps (timescale 1ns/1ps)
               settle, glitchy = [], 0
               for e in edges[5:]:
                   win = [t for t, v in res if e < t < e + per]
                   if win:
                       settle.append((win[-1] - e) / 1000.0)
                       glitchy += len(win) > 1
-              rows.append(f"W={w} P={p}: STA arrival={arr.group(1) if arr else '?'} ns, slack={ws.group(1) if ws else '?'} ns | "
+              rows.append(f"W={w} P={p} sim={sp}: STA arrival={arr.group(1) if arr else '?'} ns, slack={ws.group(1) if ws else '?'} ns | "
                           f"sim settle max={max(settle) if settle else float('nan'):.3f} ns over {len(settle)} cycles, "
                           f"{glitchy} cycles with >1 result change | {' '.join(verdict)}")
           msg = '%0A'.join(rows)

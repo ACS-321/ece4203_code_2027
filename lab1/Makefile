@@ -8,9 +8,10 @@
 #   make summary          Print area and WNS tables
 #   make csv              All sweep results -> results/summary.csv (Assignment 1)
 #   make plot             Starter plots from results/summary.csv (Assignment 1)
-#   make compare WIDTH=N PERIOD=P
+#   make compare WIDTH=N PERIOD=P [SIM_PERIOD=S]
 #                         RTL and SDF-timed gate-level netlist side by side,
-#                         same stimulus -> results/compare_N_P.vcd (Assignment 2)
+#                         same stimulus -> results/compare_N_P.vcd (Assignment 2).
+#                         SIM_PERIOD runs the netlist built for P at a faster clock.
 #   make clean            Remove all generated files
 #
 # Sweep other sizes/speeds by overriding the lists, e.g.
@@ -342,25 +343,31 @@ results/summary.csv:
 results/registered_adder_rtl.v: rtl/registered_adder.v | results/
 	sed 's/^module registered_adder\b/module registered_adder_rtl/' $< > $@
 
+# SIM_PERIOD: clock period for the simulation only (default: PERIOD). Use it to
+# run the SAME netlist (synthesized and timed for PERIOD) at a faster clock:
+#   make compare WIDTH=8 PERIOD=4 SIM_PERIOD=1.2
+SIM_PERIOD ?= $(PERIOD)
+COMPARE_TAG := $(WIDTH)_$(PERIOD)$(if $(filter-out $(PERIOD),$(SIM_PERIOD)),_sim$(SIM_PERIOD))
+
 .PHONY: compare
 compare: results/netlist_$(WIDTH)_$(PERIOD)_timed.v results/registered_adder_rtl.v
-	@echo "=== RTL vs gate-level WIDTH=$(WIDTH) PERIOD=$(PERIOD)ns ==="
+	@echo "=== RTL vs gate-level WIDTH=$(WIDTH), netlist for $(PERIOD) ns, simulated at $(SIM_PERIOD) ns ==="
 	$(IVERILOG) -g2012 -g specify \
 	    -D WIDTH=$(WIDTH) \
-	    -D PERIOD=$(PERIOD) \
-	    -D VCD_FILE=\"results/compare_$(WIDTH)_$(PERIOD).vcd\" \
+	    -D PERIOD=$(SIM_PERIOD) \
+	    -D VCD_FILE=\"results/compare_$(COMPARE_TAG).vcd\" \
 	    -D FUNCTIONAL \
-	    -o results/compare_$(WIDTH)_$(PERIOD)_exe \
+	    -o results/compare_$(COMPARE_TAG)_exe \
 	    sim/tb_compare.v \
 	    results/registered_adder_rtl.v \
 	    results/netlist_$(WIDTH)_$(PERIOD)_wrappers.v \
 	    results/netlist_$(WIDTH)_$(PERIOD)_timed.v \
 	    $(PRIMS_V) \
 	    $(CELLS_V)
-	$(VVP) results/compare_$(WIDTH)_$(PERIOD)_exe | tee results/compare_$(WIDTH)_$(PERIOD).log
+	$(VVP) results/compare_$(COMPARE_TAG)_exe | tee results/compare_$(COMPARE_TAG).log
 	@echo ""
-	@echo "Waveform: gtkwave results/compare_$(WIDTH)_$(PERIOD).vcd sim/compare.gtkw &"
-	@echo "Critical path (STA): results/sta_w$(WIDTH)p$(PERIOD).log"
+	@echo "Waveform: gtkwave results/compare_$(COMPARE_TAG).vcd sim/compare.gtkw &"
+	@echo "Critical path (STA at $(PERIOD) ns): results/sta_w$(WIDTH)p$(PERIOD).log"
 
 # ---------------------------------------------------------------
 # Housekeeping
