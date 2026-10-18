@@ -49,12 +49,12 @@ The features' entrypoints, `containerEnv` and `remoteUser` are stored in the ima
 
 | Trigger | Result |
 |---|---|
-| Pull request touching the image | build + smoke test, **no push** |
 | `git tag v2027.0.0-dev1 && git push origin v2027.0.0-dev1` | pushes `:v2027.0.0-dev1` and `:2027-dev` |
 | `git tag v2027.1.0 && git push origin v2027.1.0` | pushes `:v2027.1.0` and `:2027` |
-| Actions → image → Run workflow (push ✓) | pushes `:2027-dev` and `:sha-…` (only works once the workflow is on `main`) |
+| Actions → image → Run workflow (leave "push" unticked) | build + smoke test only, nothing published |
+| Actions → image → Run workflow (tick "push") | pushes `:2027-dev` and `:sha-…` |
 
-A tag-triggered run uses the workflow file *at the tagged commit*. So you can tag a PR branch to publish a `-dev` image and test it in a Codespace before merging.
+**No workflow runs automatically on pull requests** (this saves Actions minutes). Run them from the Actions tab when you want a check: `image` (build + smoke test), `lab1`, `ladder` and `macros-pads`. Standard runners are free for public repositories, but the ladder and macros-pads runs are long. A tag-triggered run uses the workflow file *at the tagged commit*. So you can tag a PR branch to publish a `-dev` image and test it in a Codespace before merging.
 
 **Runner disk:** the ORFS base is about 6 GB unpacked and the final image about 9 GB. The workflow deletes preinstalled SDKs (.NET, Android, GHC, …) and moves Docker's storage to `/mnt` when that disk has more than 40 GB free.
 

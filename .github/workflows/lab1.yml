@@ -1,14 +1,11 @@
 # Runs the Lab 1 assignment steps in the published image and reports the results
 # as annotations: the sweep CSV (Assignment 1) and RTL-vs-gate-level comparisons,
 # with settling times measured from the VCD next to STA's arrival time (Assignment 2).
+# Manual only: Actions tab -> lab1 -> Run workflow.
 name: lab1
 
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - lab1/**
-      - .github/workflows/lab1.yml
 
 permissions:
   contents: read

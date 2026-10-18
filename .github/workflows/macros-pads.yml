@@ -1,5 +1,6 @@
 # Run the Phase 4 examples (SRAM macros, hardened block, pad ring) through ORFS
 # in the published image and collect metrics. Same structure as ladder.yml.
+# Manual only: Actions tab -> macros-pads -> Run workflow.
 name: macros-pads
 
 on:
@@ -8,13 +9,6 @@ on:
       image:
         description: Image to run in
         default: ghcr.io/dvanblerkom/ece4203:2027-dev
-  pull_request:
-    paths:
-      - openroad_flow/designs/asap7/riscv32i_macros/**
-      - openroad_flow/designs/asap7/riscvsingle_hier/**
-      - openroad_flow/designs/ihp-sg13g2/**
-      - openroad_flow/designs/src/padring_counter/**
-      - .github/workflows/macros-pads.yml
 
 permissions:
   contents: read
