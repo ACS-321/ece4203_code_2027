@@ -1,7 +1,7 @@
 # Run the example design ladder through ORFS on both platforms, using the
 # published image, and collect metrics (CSV + plots) and runtimes.
 # Each design x platform is its own job on a 4-vCPU runner, so the reported
-# runtimes are what a 4-core Codespace should see.
+# runtimes are what a 4-core Codespace should see (the default Codespace is 2-core).
 name: ladder
 
 on:

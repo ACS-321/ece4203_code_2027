@@ -24,7 +24,7 @@ make DESIGN=gcd PLATFORM=asap7 gui_final    # look at a finished layout
 | Used elsewhere in the course | Lab 1 (Yosys + OpenSTA), KLayout cells, ngspice models | Phase 4 macro example (fakeram7) |
 
 **Why these two?** They're the widest node gap among the well-supported ORFS platforms.
-Both have the same example designs in ORFS, and both run in a 4-core Codespace in minutes.
+Both have the same example designs in ORFS, and both run in a Codespace in minutes (the default is the 2-core machine; see the note on runtimes below).
 - **nangate45** (45 nm) would make a reasonable third point between them, but its open cell library is old and coarse.
 - **ihp-sg13g2** is the same node as sky130 (130 nm), so it shows no scaling. It's used for the pad-ring example instead.
 - **gf180** (180 nm) is too close to sky130 to show much.
@@ -43,7 +43,7 @@ Both have the same example designs in ORFS, and both run in a 4-core Codespace i
 
 ### Expected runtime (4 vCPU)
 
-Measured by `.github/workflows/ladder.yml` on GitHub's 4-vCPU / 16 GB runners, which are comparable to a 4-core Codespace. Times are the sum of all ORFS stage times (`runtime_s` in `metrics.csv`); add about 1 minute of make and setup overhead.
+Measured by `.github/workflows/ladder.yml` on GitHub's 4-vCPU / 16 GB runners, which are comparable to a **4-core** Codespace. The default Codespace is **2-core / 8 GB** to keep core-hours down, so expect the longer runs (riscvsingle and aes on sky130hd) to take noticeably longer there. Peak memory in these runs was at most 2.8 GB, so 8 GB is enough. For a 4-core machine, pick it on the Codespace creation screen (Machine type). Times are the sum of all ORFS stage times (`runtime_s` in `metrics.csv`); add about 1 minute of make and setup overhead.
 
 | Design | sky130hd | asap7 |
 |---|---|---|
