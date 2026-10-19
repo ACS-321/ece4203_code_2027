@@ -2,13 +2,11 @@
 
 **Area, power and the cost of speed, from Lab 1's registered adder**
 
-In Lab 1 you synthesized the registered adder (`rtl/registered_adder.v`) to sky130
-standard cells with Yosys, timed it with OpenSTA, and simulated it. In this
+In Lab 1 you will synthesize the registered adder (`rtl/registered_adder.v`) to sky130
+standard cells with Yosys, time it with OpenSTA, and simulate it. In this
 assignment you sweep its **width** and its **clock period**, collect the results,
 and build simple models from them: area per bit, power per bit, power per MHz,
-and delay per bit. Your plots are the evidence for every claim you make.
-
-**Time:** about 3–4 hours. Almost all of it is analysis; the tool runs take a few minutes.
+and delay per bit.
 
 ## Learning objectives
 
@@ -73,7 +71,6 @@ area to go faster. The `arrival_ns` column is the delay of each circuit's worst 
 7. Make a table for **W = 32**: area, combinational area, arrival and WNS at T = 16, 8, 4, 2 and 1 ns.
    - Which periods does it actually meet (WNS ≥ 0)?
    - What's the fastest clock a 32-bit adder can run at in this flow, and what does that speed cost in area compared with 16 ns?
-   - Some loose-period points fail timing by a small amount. Why can synthesis's estimate miss? (Hint: what does ABC know about wire loads and the 520 ps it subtracted?)
 
 ## Part C: Power
 
