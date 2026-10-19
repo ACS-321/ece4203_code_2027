@@ -66,6 +66,19 @@ t_desktop() {
     [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:6080/vnc.html)" = 200 ]
     pgrep -a Xtigervnc | grep -q -- '-SecurityTypes VncAuth'
     pgrep -x xfce4-session >/dev/null
+    # A terminal opened in the desktop inherits the XFCE session's environment, not ours.
+    # The entrypoint starts the session through `sudo -u`, which resets PATH, so the tools
+    # must still be found (the ~/.bashrc block that desktop.sh ensure installs restores them).
+    local pid env_args
+    pid="$(pgrep -x xfce4-session | head -n 1)"
+    mapfile -t env_args < <(tr '\0' '\n' < "/proc/${pid}/environ" | grep -E '^(HOME|USER|LOGNAME|PATH|SHELL)=')
+    echo "desktop session PATH: $(printf '%s\n' "${env_args[@]}" | sed -n 's/^PATH=//p')"
+    env -i "${env_args[@]}" bash -ic '
+        for t in iverilog vvp gtkwave yosys openroad sta; do
+            command -v "$t" || { echo "NOT FOUND in a desktop terminal: $t"; exit 1; }
+        done
+        [ "$(command -v yosys)" = /OpenROAD-flow-scripts/tools/install/yosys/bin/yosys ]
+        [ -n "$PDK_ROOT" ] && [ -n "$FLOW_HOME" ]' 2>/dev/null
 }
 
 wait_window() {   # wait_window <title regex> <seconds>: a mapped window >= 200x100

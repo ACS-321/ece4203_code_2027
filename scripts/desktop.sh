@@ -156,18 +156,40 @@ start_desktop() {
     fi
 }
 
-# Terminals opened inside the noVNC desktop start in $HOME. Make interactive shells that
-# start in $HOME begin in the repo checkout instead (/workspaces/<repo name> in Codespaces;
-# the name varies for forks, so the first non-hidden directory under /workspaces is used).
-# VS Code terminals already start in the repo, so they are unaffected. Rewritten on every
-# start, so changes to the block below reach existing Codespaces.
+# Shell setup for terminals opened inside the noVNC desktop, via a block in ~/.bashrc.
+#
+# 1. PATH and tool variables. The container entrypoint starts the desktop through
+#    `sudo -u user`, and sudo replaces PATH with its secure_path and drops the image's
+#    ENV (PDK_ROOT, FLOW_HOME, ...). Every terminal opened in the desktop then lacks the
+#    ORFS tools (openroad, yosys, sta) and the OSS CAD Suite (iverilog, vvp, gtkwave).
+#    VS Code terminals are unaffected (login shells read /etc/profile.d/ece4203.sh).
+#    Same order as the image: ORFS tools first, OSS CAD Suite last.
+# 2. Working directory. Terminals there also start in $HOME; make an interactive shell
+#    that starts in $HOME begin in the repo checkout instead (/workspaces/<repo name>;
+#    the name varies for forks, so the first non-hidden directory is used).
+#
+# Rewritten on every start (replacing the old "workdir" block too), so changes to the
+# block below reach existing Codespaces.
 install_shell_hook() {
-    local rc="${HOME}/.bashrc" begin='# >>> ece4203 workdir >>>' end='# <<< ece4203 workdir <<<'
+    local rc="${HOME}/.bashrc"
     [ -w "$rc" ] || [ ! -e "$rc" ] || return 0
     touch "$rc"
-    sed -i "\|${begin}|,\|${end}|d" "$rc"
+    sed -i -e '\|# >>> ece4203 workdir >>>|,\|# <<< ece4203 workdir <<<|d' \
+           -e '\|# >>> ece4203 shell >>>|,\|# <<< ece4203 shell <<<|d' "$rc"
     cat >> "$rc" <<'HOOK'
-# >>> ece4203 workdir >>>
+# >>> ece4203 shell >>>
+for _p in /OpenROAD-flow-scripts/tools/install/kepler-formal/bin \
+          /OpenROAD-flow-scripts/tools/install/yosys/bin \
+          /OpenROAD-flow-scripts/tools/install/OpenROAD/bin; do
+    case ":$PATH:" in *":$_p:"*) ;; *) [ -d "$_p" ] && PATH="$_p:$PATH" ;; esac
+done
+case ":$PATH:" in
+    *:/opt/oss-cad-suite/bin:*) ;;
+    *) [ -d /opt/oss-cad-suite/bin ] && PATH="$PATH:/opt/oss-cad-suite/bin" ;;
+esac
+unset _p
+export PATH PDK_ROOT="${PDK_ROOT:-/opt/pdk}" PDK="${PDK:-sky130A}" \
+       FLOW_HOME="${FLOW_HOME:-/OpenROAD-flow-scripts/flow}"
 if [ "$PWD" = "$HOME" ] && [ -z "${ECE4203_CD_DONE:-}" ]; then
     export ECE4203_CD_DONE=1
     for _d in /workspaces/*/; do
@@ -175,7 +197,7 @@ if [ "$PWD" = "$HOME" ] && [ -z "${ECE4203_CD_DONE:-}" ]; then
     done
     unset _d
 fi
-# <<< ece4203 workdir <<<
+# <<< ece4203 shell <<<
 HOOK
 }
 
