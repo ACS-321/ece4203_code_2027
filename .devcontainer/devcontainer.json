@@ -33,7 +33,7 @@
             ]
         },
         "codespaces": {
-            "idleTimeoutMinutes": 15
+            "idleTimeoutMinutes": 30
         }
     }
 }
