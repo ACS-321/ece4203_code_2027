@@ -6,6 +6,8 @@ OpenSTA, KLayout, ngspice and OSS CAD Suite in a GitHub Codespace.
 - **Desktop for GUI tools (KLayout, `openroad -gui`):** open the **Ports** tab and
   click port **6080 "Desktop (noVNC)"**. The password is `ece4203`. For
   troubleshooting and fallbacks, see [docs/desktop.md](docs/desktop.md).
+- **Running locally instead of in a Codespace** (Docker on Mac, Windows or Linux;
+  optional, for students comfortable with Docker): [docs/local.md](docs/local.md).
 - **Physical design:** `cd openroad_flow && make DESIGN=gcd` (any ORFS design, or your own
   under `openroad_flow/designs/`). Run `make list` to see what's available.
 - **Two technologies, design ladder, metrics:** [docs/examples.md](docs/examples.md).
