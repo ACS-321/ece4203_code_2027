@@ -49,8 +49,7 @@ make csv WIDTHS="4 8 16 24 32 48 64" PERIODS="1 2 4 8 16"
 
 ## Part A: Area per bit at a relaxed clock (T = 16 ns)
 
-1. **Predict first.** From the liberty file, write down the area of `sky130_fd_sc_hd__dfrtp_1` and of the cells a ripple adder would use. Predict the area per bit of the *flip-flops alone*, and write down your guess for the whole design.
-2. Plot `area_um2` vs `width` at T = 16 ns. Fit `area = m·W + c`. Report **m in µm²/bit**, c, and the R² (or the largest residual).
+2. Plot `area_um2` vs `width` at T = 16 ns. Fit `area = m·W + c`. Report **m in µm²/bit**, and c.
 3. Do the same for `seq_area_um2` (flip-flops only). Compare its slope with your prediction from step 1. Explain the intercept: why isn't it 0?
 4. What fraction of the area is flip-flops at W = 4 and at W = 64? What does that say about where "an adder's area" really goes in this design?
 
@@ -66,7 +65,6 @@ area to go faster. The `arrival_ns` column is the delay of each circuit's worst 
    - Open `results/yosys_64_16.log` and `results/yosys_64_1.log`, compare the cell lists at the end, and say what synthesis changed.
 6. Plot `arrival_ns` vs W for the netlists built at **T = 1 ns** (the fastest synthesis can make) and at **T = 16 ns**.
    - Fit a line to the T = 1 ns points. Report the **delay per bit in ps/bit**. Is the fastest adder synthesis found still a ripple adder (delay ∝ W), or something faster (∝ log W)?
-   - Compare that slope with one full-adder carry stage in the liberty file: `sky130_fd_sc_hd__fa_1`, pin `CIN → COUT`, or `maj3_1`, at a typical slew and load.
    - Why do the T = 16 ns arrival times grow so much faster with W? Hint: look at T = 16 ns, W = 64. How close is the arrival time to the budget?
 7. Make a table for **W = 32**: area, combinational area, arrival and WNS at T = 16, 8, 4, 2 and 1 ns.
    - Which periods does it actually meet (WNS ≥ 0)?
