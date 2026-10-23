@@ -93,7 +93,7 @@ A PDF report, no more than 6 pages plus an appendix:
 | | Points |
 |---|---|
 | Sweep ran; CSV correct | 10 |
-| Part A: prediction, fits, flip-flop analysis (Q1–4) | 25 |
+| Part A: prediction, fits, flip-flop analysis (Q2–4) | 25 |
 | Part B: area cost of speed, delay/bit, W = 32 speed/area table (Q5–7) | 30 |
 | Part C: power slopes, energy/bit, leakage, seq vs comb (Q8–11) | 25 |
 | Report quality: units everywhere, fits drawn on plots, ranges stated | 10 |
